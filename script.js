@@ -164,18 +164,24 @@ function setupTrackControls() {
     // Sound selectors
     setupSoundSelectors();
     
-    // Minimize/restore controls
-    document.getElementById('minimize-controls').addEventListener('click', () => {
-        document.querySelector('.track-controls').style.display = 'none';
-        document.querySelector('.minimized-controls').style.display = 'flex';
-        log('Minimized track controls');
-    });
+    // Toggle controls
+    const trackControls = document.querySelector('.track-controls');
+    const toggleBtn = document.querySelector('.track-controls-toggle');
+    const toggleIcon = document.querySelector('.toggle-icon');
     
-    document.getElementById('restore-controls').addEventListener('click', () => {
-        document.querySelector('.track-controls').style.display = 'block';
-        document.querySelector('.minimized-controls').style.display = 'none';
-        log('Restored track controls');
-    });
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            trackControls.classList.toggle('collapsed');
+            const isCollapsed = trackControls.classList.contains('collapsed');
+            
+            // Update icon
+            if (toggleIcon) {
+                toggleIcon.textContent = isCollapsed ? '+' : '−';
+            }
+            
+            log(isCollapsed ? 'Collapsed track controls' : 'Expanded track controls');
+        });
+    }
 }
 
 // Effect Sliders Setup

@@ -16,140 +16,261 @@ body {
     -webkit-user-select: none;
 }
 
-/* Track Controls */
+/* Track Controls - Minimal Design */
 .track-controls {
     position: fixed;
     left: 0;
     top: 50px;
-    width: 300px;
-    background: rgba(0, 0, 0, 0.9);
-    border-right: 1px solid #333;
+    width: 320px;
+    background: linear-gradient(135deg, rgba(30, 30, 35, 0.95), rgba(20, 20, 25, 0.95));
+    backdrop-filter: blur(15px);
+    border-right: 2px solid rgba(74, 158, 255, 0.2);
     padding: 10px;
     height: calc(100vh - 50px);
     overflow-y: auto;
     z-index: 100;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.controls-header {
+.track-controls.collapsed {
+    transform: translateX(-280px);
+}
+
+.track-controls-toggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 24px;
+    height: 24px;
+    background: rgba(74, 158, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #333;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    z-index: 10;
 }
 
-.controls-header h3 {
-    font-size: 16px;
-    font-weight: 500;
+.track-controls-toggle:hover {
+    background: rgba(74, 158, 255, 1);
+    transform: scale(1.1);
+}
+
+.track-controls.collapsed {
+    transform: translateX(-280px);
+}
+
+.track-controls.collapsed .track-controls-toggle {
+    position: fixed;
+    left: 10px;
+    top: 70px;
+    background: rgba(74, 158, 255, 0.9);
 }
 
 .track-control-row {
-    margin-bottom: 15px;
-    padding: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 5px;
+    margin-bottom: 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(50, 50, 60, 0.9), rgba(40, 40, 50, 0.9));
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.track-control-row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #4a9eff, #26de81, #ffa502, #ff4757);
+    opacity: 0.6;
+}
+
+.track-control-row:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.15);
+    border-color: rgba(74, 158, 255, 0.25);
+}
+
+.track-control-row[data-track="0"]::before { background: linear-gradient(90deg, #ff4757, #ff3838); }
+.track-control-row[data-track="1"]::before { background: linear-gradient(90deg, #ffa502, #ff9500); }
+.track-control-row[data-track="2"]::before { background: linear-gradient(90deg, #26de81, #20bf6b); }
+.track-control-row[data-track="3"]::before { background: linear-gradient(90deg, #4a9eff, #0084ff); }
+.track-control-row[data-track="4"]::before { background: linear-gradient(90deg, #a55eea, #8854d0); }
+.track-control-row[data-track="5"]::before { background: linear-gradient(90deg, #fd79a8, #e84393); }
+.track-control-row[data-track="6"]::before { background: linear-gradient(90deg, #fdcb6e, #e17055); }
+.track-control-row[data-track="7"]::before { background: linear-gradient(90deg, #6c5ce7, #5f3dc4); }
+
+.track-control-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
 }
 
 .track-label {
-    display: inline-block;
-    width: 60px;
+    font-weight: 600;
+    font-size: 16px;
+    color: #ffffff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    min-width: 70px;
+    flex-shrink: 0;
+}
+
+.track-controls-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.sound-selector {
+    background: linear-gradient(135deg, rgba(74, 158, 255, 0.08), rgba(26, 222, 129, 0.08));
+    border: 1px solid rgba(74, 158, 255, 0.25);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
     font-weight: 500;
-    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
+    text-align: center;
+    margin-bottom: 0;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.1);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.sound-selector:hover {
+    background: linear-gradient(135deg, rgba(74, 158, 255, 0.25), rgba(26, 222, 129, 0.25));
+    border-color: rgba(74, 158, 255, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(74, 158, 255, 0.2), inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.sound-selector:focus {
+    outline: none;
+    border-color: rgba(74, 158, 255, 0.7);
+    box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2);
 }
 
 .sound-gen-btn, .effects-toggle-btn {
-    background: #333;
+    background: linear-gradient(135deg, #4a9eff, #357abd);
     border: none;
-    color: #fff;
-    padding: 5px 10px;
-    border-radius: 3px;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
     cursor: pointer;
-    margin-left: 5px;
-    font-size: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(74, 158, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 60px;
+    height: 32px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .sound-gen-btn:hover, .effects-toggle-btn:hover {
-    background: #444;
+    background: linear-gradient(135deg, #5aa8ff, #4a9eff);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(74, 158, 255, 0.4);
+}
+
+.sound-gen-btn:active, .effects-toggle-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(74, 158, 255, 0.3);
 }
 
 .track-effects-panel {
     display: none;
-    margin-top: 10px;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 3px;
+    margin-top: 15px;
+    padding: 15px;
+    background: linear-gradient(135deg, rgba(30, 30, 40, 0.9), rgba(20, 20, 30, 0.9));
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .effect-control {
     display: flex;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
+    padding: 8px 0;
 }
 
 .effect-control label {
-    width: 60px;
-    font-size: 12px;
-    color: #aaa;
+    width: 70px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #e0e0e0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .effect-control input[type="range"] {
     flex: 1;
-    margin: 0 10px;
+    margin: 0 12px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    appearance: none;
+    cursor: pointer;
+}
+
+.effect-control input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a9eff, #0084ff);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(74, 158, 255, 0.4);
+    transition: all 0.2s ease;
+}
+
+.effect-control input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 3px 8px rgba(74, 158, 255, 0.6);
+}
+
+.effect-control input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a9eff, #0084ff);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 6px rgba(74, 158, 255, 0.4);
 }
 
 .effect-value {
-    width: 30px;
-    text-align: right;
+    width: 35px;
+    text-align: center;
     font-size: 12px;
-    color: #888;
+    font-weight: 600;
+    color: #4a9eff;
+    background: rgba(74, 158, 255, 0.1);
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(74, 158, 255, 0.2);
 }
 
-/* Minimized Controls */
-.minimized-controls {
-    position: fixed;
-    left: 0;
-    top: 50px;
-    width: 60px;
-    background: rgba(0, 0, 0, 0.9);
-    border-right: 1px solid #333;
-    padding: 10px;
-    z-index: 100;
-    display: none;
-}
 
-#restore-controls {
-    width: 100%;
-    background: #333;
-    border: none;
-    color: #fff;
-    padding: 10px;
-    border-radius: 3px;
-    cursor: pointer;
-    margin-bottom: 10px;
-}
-
-.mini-track-indicators {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.mini-track {
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-.mini-track.active {
-    background: rgba(255, 255, 255, 0.3);
-}
 
 /* Top Menu Bar */
 .top-menu {

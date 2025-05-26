@@ -952,10 +952,17 @@ input[type="range"]::-moz-range-thumb {
     background: rgba(30, 30, 30, 0.8);
 }
 
-.sequencer-header h3 {
+.sequencer-title h3 {
     margin: 0;
     color: #fff;
     font-size: 18px;
+}
+
+.sequencer-help {
+    margin: 2px 0 0 0;
+    color: #999;
+    font-size: 12px;
+    font-style: italic;
 }
 
 .sequencer-controls {
@@ -1263,4 +1270,207 @@ input[type="range"]::-moz-range-thumb {
 
 .seq-step.active.current {
     animation: stepPulse 0.3s ease-in-out;
+}
+
+/* Note indicators inside step buttons */
+.note-indicator {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 8px;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 2px;
+    padding: 1px 3px;
+    line-height: 1;
+    pointer-events: none;
+    min-width: 12px;
+    text-align: center;
+}
+
+/* Note Selector Popup */
+.note-selector-popup {
+    background: rgba(40, 40, 40, 0.95);
+    backdrop-filter: blur(10px);
+    border: 2px solid #555;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    max-width: 320px;
+    animation: notePopupIn 0.2s ease-out;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.note-selector-title {
+    color: #fff;
+    font-weight: bold;
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 5px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #555;
+}
+
+.note-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+}
+
+.note-selector-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 5px;
+}
+
+.note-option {
+    background: #333;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 8px 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    transition: all 0.15s ease;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.note-option:hover {
+    background: #4a9eff;
+    border-color: #4a9eff;
+    transform: scale(1.05);
+}
+
+.note-option.selected {
+    background: #4a9eff;
+    border-color: #4a9eff;
+    color: white;
+    box-shadow: 0 0 8px rgba(74, 158, 255, 0.5);
+}
+
+.note-option.current {
+    background: #26de81;
+    border-color: #26de81;
+    color: white;
+}
+
+.note-option.current.selected {
+    background: linear-gradient(135deg, #26de81, #4a9eff);
+    border-color: #4a9eff;
+}
+
+.note-option.original {
+    background: #ffa502;
+    border-color: #ffa502;
+    color: white;
+    font-weight: bolder;
+}
+
+.note-option.original.selected {
+    background: linear-gradient(135deg, #ffa502, #4a9eff);
+    border-color: #4a9eff;
+}
+
+.note-selector-ok,
+.note-selector-cancel {
+    background: #4a9eff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.note-selector-ok:hover {
+    background: #5aa8ff;
+    transform: translateY(-1px);
+}
+
+.note-selector-cancel {
+    background: #666;
+}
+
+.note-selector-cancel:hover {
+    background: #777;
+    transform: translateY(-1px);
+}
+
+.note-selector-close {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #ff4757;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.note-selector-close:hover {
+    background: #ff3838;
+    transform: scale(1.1);
+}
+
+@keyframes notePopupIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Mobile responsiveness for note selector */
+@media (max-width: 768px) {
+    .note-selector-popup {
+        max-width: 280px;
+        padding: 12px;
+    }
+    
+    .note-selector-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .note-option {
+        padding: 6px 2px;
+        font-size: 10px;
+        min-height: 25px;
+    }
+    
+    .note-selector-ok,
+    .note-selector-cancel {
+        padding: 6px 16px;
+        font-size: 12px;
+    }
+    
+    .note-selector-title {
+        font-size: 12px;
+    }
+    
+    .note-indicator {
+        font-size: 7px;
+        padding: 0px 2px;
+    }
 }

@@ -29,6 +29,7 @@ let beatSequencer = {
     currentStep: 0,
     patternLength: 16,
     sequence: {}, // Track patterns: { trackIndex: [step1, step2, ...] }
+    stepNotes: {}, // Step pitches: { trackIndex: { stepIndex: semitones } }
     muted: {}, // Muted tracks: { trackIndex: boolean }
     solo: {}, // Solo tracks: { trackIndex: boolean }
     volumes: {}, // Track volumes: { trackIndex: volume }
@@ -1598,6 +1599,7 @@ function setupBeatSequencer() {
     // Initialize sequencer state for all tracks
     for (let i = 0; i < 8; i++) {
         beatSequencer.sequence[i] = new Array(16).fill(false);
+        beatSequencer.stepNotes[i] = {}; // Will store semitone offsets for each step
         beatSequencer.muted[i] = false;
         beatSequencer.solo[i] = false;
         beatSequencer.volumes[i] = 70;
@@ -1675,6 +1677,9 @@ function generateStepGrid() {
         
         // Ensure sequence array is correct length
         beatSequencer.sequence[trackIndex] = new Array(beatSequencer.patternLength).fill(false);
+        if (!beatSequencer.stepNotes[trackIndex]) {
+            beatSequencer.stepNotes[trackIndex] = {};
+        }
         
         for (let stepIndex = 0; stepIndex < beatSequencer.patternLength; stepIndex++) {
             const stepBtn = document.createElement('button');
@@ -1682,12 +1687,46 @@ function generateStepGrid() {
             stepBtn.dataset.track = trackIndex;
             stepBtn.dataset.step = stepIndex;
             
+            // Add note indicator inside the button
+            const noteIndicator = document.createElement('span');
+            noteIndicator.className = 'note-indicator';
+            noteIndicator.textContent = ''; // Will show note when set
+            stepBtn.appendChild(noteIndicator);
+            
             // Highlight every 4th step (downbeats)
             if (stepIndex % 4 === 0) {
                 stepBtn.classList.add('downbeat');
             }
             
-            stepBtn.addEventListener('click', () => toggleStep(trackIndex, stepIndex));
+            // Left click to toggle step
+            stepBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleStep(trackIndex, stepIndex);
+            });
+            
+            // Right click to change note
+            stepBtn.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                openNoteSelector(trackIndex, stepIndex, e.target);
+            });
+            
+            // Long press for mobile (touch and hold)
+            let longPressTimer;
+            stepBtn.addEventListener('touchstart', (e) => {
+                longPressTimer = setTimeout(() => {
+                    e.preventDefault();
+                    openNoteSelector(trackIndex, stepIndex, e.target);
+                }, 500);
+            });
+            
+            stepBtn.addEventListener('touchend', () => {
+                clearTimeout(longPressTimer);
+            });
+            
+            stepBtn.addEventListener('touchmove', () => {
+                clearTimeout(longPressTimer);
+            });
+            
             stepsContainer.appendChild(stepBtn);
         }
     }
@@ -1702,6 +1741,12 @@ function toggleStep(trackIndex, stepIndex) {
     const stepBtn = document.querySelector(`.seq-step[data-track="${trackIndex}"][data-step="${stepIndex}"]`);
     if (stepBtn) {
         stepBtn.classList.toggle('active', !isActive);
+        
+        // If step is being activated and no note is set, set default (0 semitones)
+        if (!isActive && !(stepIndex in beatSequencer.stepNotes[trackIndex])) {
+            beatSequencer.stepNotes[trackIndex][stepIndex] = 0;
+            updateStepNoteDisplay(trackIndex, stepIndex);
+        }
     }
     
     log(`Track ${trackIndex + 1}, Step ${stepIndex + 1}: ${!isActive ? 'ON' : 'OFF'}`);
@@ -1840,11 +1885,16 @@ function clearSequencer() {
     // Clear all steps
     for (let trackIndex = 0; trackIndex < 8; trackIndex++) {
         beatSequencer.sequence[trackIndex] = new Array(beatSequencer.patternLength).fill(false);
+        beatSequencer.stepNotes[trackIndex] = {}; // Clear note data too
     }
     
     // Update UI
     document.querySelectorAll('.seq-step').forEach(btn => {
         btn.classList.remove('active');
+        const noteIndicator = btn.querySelector('.note-indicator');
+        if (noteIndicator) {
+            noteIndicator.textContent = '';
+        }
     });
     
     log('Sequencer cleared');
@@ -1885,19 +1935,21 @@ function scheduleStep(stepIndex, time) {
                 if (track.sample) {
                     // Use the sequencer volume
                     const volume = beatSequencer.volumes[trackIndex] / 100;
-                    playSequencerStep(trackIndex, volume, time);
+                    // Get note offset for this step (default to 0 if not set)
+                    const semitones = beatSequencer.stepNotes[trackIndex][stepIndex] || 0;
+                    playSequencerStep(trackIndex, volume, time, semitones);
                 }
             }
         }
     }
 }
 
-function playSequencerStep(trackIndex, volume, time) {
+function playSequencerStep(trackIndex, volume, time, semitones = 0) {
     try {
-        // Use the enhanced audio engine method
-        const player = audioEngine.playSequencerSample(trackIndex, volume, time);
+        // Use the enhanced audio engine method with pitch offset
+        const player = audioEngine.playSequencerSample(trackIndex, volume, time, semitones);
         if (player) {
-            log(`Sequencer step played: Track ${trackIndex + 1}, Volume: ${volume.toFixed(2)}`);
+            log(`Sequencer step played: Track ${trackIndex + 1}, Volume: ${volume.toFixed(2)}, Pitch: ${semitones > 0 ? '+' : ''}${semitones}`);
         }
     } catch (error) {
         log(`ERROR: Failed to play sequencer step for track ${trackIndex + 1}:`, error);
@@ -1928,3 +1980,166 @@ function updatePlayhead() {
         }
     });
 }
+
+// ===== NOTE SELECTOR FUNCTIONS =====
+
+function openNoteSelector(trackIndex, stepIndex, stepElement) {
+    // Remove any existing note selector
+    closeNoteSelector();
+    
+    const currentSemitones = beatSequencer.stepNotes[trackIndex][stepIndex] || 0;
+    let selectedSemitones = currentSemitones; // Track temporary selection
+    
+    // Create note selector popup
+    const noteSelector = document.createElement('div');
+    noteSelector.className = 'note-selector-popup';
+    noteSelector.id = 'note-selector-popup';
+    
+    // Add title
+    const title = document.createElement('div');
+    title.className = 'note-selector-title';
+    title.textContent = `Track ${trackIndex + 1} - Step ${stepIndex + 1}`;
+    noteSelector.appendChild(title);
+    
+    // Create notes grid container
+    const notesGrid = document.createElement('div');
+    notesGrid.className = 'note-selector-grid';
+    
+    // Note options from -12 to +12 semitones
+    const noteOptions = [];
+    for (let i = -12; i <= 12; i++) {
+        const noteBtn = document.createElement('button');
+        noteBtn.className = 'note-option';
+        noteBtn.dataset.semitones = i;
+        
+        // Display note name
+        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const baseNote = 'C'; // Assuming C as base
+        const noteIndex = (noteNames.indexOf(baseNote) + i + 12 * 10) % 12;
+        const octaveOffset = Math.floor((i + 12 * 10) / 12) - 10;
+        
+        if (i === 0) {
+            noteBtn.textContent = 'Original';
+            noteBtn.classList.add('original');
+        } else {
+            noteBtn.textContent = `${noteNames[noteIndex]}${octaveOffset >= 0 ? '+' : ''}${octaveOffset !== 0 ? octaveOffset : ''}`;
+        }
+        
+        if (i === currentSemitones) {
+            noteBtn.classList.add('current');
+        }
+        
+        if (i === selectedSemitones) {
+            noteBtn.classList.add('selected');
+        }
+        
+        noteBtn.addEventListener('click', () => {
+            // Remove selection from all buttons
+            noteOptions.forEach(btn => btn.classList.remove('selected'));
+            
+            // Add selection to clicked button
+            noteBtn.classList.add('selected');
+            selectedSemitones = i;
+            
+            // Preview the sound
+            previewStepNote(trackIndex, i);
+        });
+        
+        noteOptions.push(noteBtn);
+    }
+    
+    noteOptions.forEach(btn => notesGrid.appendChild(btn));
+    noteSelector.appendChild(notesGrid);
+    
+    // Add action buttons
+    const actionButtons = document.createElement('div');
+    actionButtons.className = 'note-selector-actions';
+    
+    const okBtn = document.createElement('button');
+    okBtn.className = 'note-selector-ok';
+    okBtn.textContent = 'OK';
+    okBtn.addEventListener('click', () => {
+        setStepNote(trackIndex, stepIndex, selectedSemitones);
+        closeNoteSelector();
+    });
+    
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'note-selector-cancel';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', closeNoteSelector);
+    
+    actionButtons.appendChild(okBtn);
+    actionButtons.appendChild(cancelBtn);
+    noteSelector.appendChild(actionButtons);
+    
+    // Add close button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'note-selector-close';
+    closeBtn.textContent = '×';
+    closeBtn.addEventListener('click', closeNoteSelector);
+    noteSelector.appendChild(closeBtn);
+    
+    // Position near the step button
+    const rect = stepElement.getBoundingClientRect();
+    noteSelector.style.position = 'fixed';
+    noteSelector.style.left = Math.min(rect.left, window.innerWidth - 320) + 'px';
+    noteSelector.style.top = Math.max(rect.top - 250, 10) + 'px';
+    noteSelector.style.zIndex = '1000';
+    
+    document.body.appendChild(noteSelector);
+    
+    log(`Opened note selector for Track ${trackIndex + 1}, Step ${stepIndex + 1}`);
+}
+
+function closeNoteSelector() {
+    const existing = document.getElementById('note-selector-popup');
+    if (existing) {
+        existing.remove();
+    }
+}
+
+function setStepNote(trackIndex, stepIndex, semitones) {
+    beatSequencer.stepNotes[trackIndex][stepIndex] = semitones;
+    updateStepNoteDisplay(trackIndex, stepIndex);
+    
+    log(`Set Track ${trackIndex + 1}, Step ${stepIndex + 1} to ${semitones > 0 ? '+' : ''}${semitones} semitones`);
+}
+
+function updateStepNoteDisplay(trackIndex, stepIndex) {
+    const stepBtn = document.querySelector(`.seq-step[data-track="${trackIndex}"][data-step="${stepIndex}"]`);
+    const noteIndicator = stepBtn?.querySelector('.note-indicator');
+    
+    if (noteIndicator) {
+        const semitones = beatSequencer.stepNotes[trackIndex][stepIndex];
+        if (semitones === undefined || semitones === 0) {
+            noteIndicator.textContent = '';
+        } else {
+            noteIndicator.textContent = semitones > 0 ? `+${semitones}` : `${semitones}`;
+        }
+    }
+}
+
+function previewStepNote(trackIndex, semitones) {
+    if (!audioEngine || !audioEngine.tracks[trackIndex] || !audioEngine.tracks[trackIndex].sample) {
+        log(`No sample loaded for track ${trackIndex + 1} preview`);
+        return;
+    }
+    
+    try {
+        // Use the audio engine's sequencer method for preview
+        const volume = beatSequencer.volumes[trackIndex] / 100;
+        audioEngine.playSequencerSample(trackIndex, volume, null, semitones);
+        
+        log(`Previewed Track ${trackIndex + 1} with ${semitones > 0 ? '+' : ''}${semitones} semitones`);
+    } catch (error) {
+        log(`ERROR: Failed to preview note for track ${trackIndex + 1}:`, error);
+    }
+}
+
+// Close note selector when clicking outside
+document.addEventListener('click', (e) => {
+    const noteSelector = document.getElementById('note-selector-popup');
+    if (noteSelector && !noteSelector.contains(e.target) && !e.target.classList.contains('seq-step')) {
+        closeNoteSelector();
+    }
+});

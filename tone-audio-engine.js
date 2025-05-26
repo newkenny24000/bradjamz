@@ -418,7 +418,7 @@ class ToneAudioEngine {
     }
     
     // Enhanced sequencer support
-    playSequencerSample(trackIndex, volume = 1.0, time = null) {
+    playSequencerSample(trackIndex, volume = 1.0, time = null, semitones = 0) {
         const track = this.tracks[trackIndex];
         if (!track || !track.sample) {
             return null;
@@ -432,13 +432,20 @@ class ToneAudioEngine {
             const originalGain = track.effects.gain.gain.value;
             track.effects.gain.gain.setValueAtTime(volume, playTime);
             
-            // Trigger the sample
-            track.sampler.triggerAttack('C4', playTime);
+            // Calculate note based on semitone offset
+            const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            const baseNoteIndex = 0; // C4 = 0
+            const targetNoteIndex = (baseNoteIndex + semitones + 12 * 10) % 12;
+            const octaveOffset = Math.floor((baseNoteIndex + semitones + 12 * 10) / 12) - 10 + 4; // Base octave 4
+            const noteName = noteNames[targetNoteIndex] + octaveOffset;
+            
+            // Trigger the sample at the calculated pitch
+            track.sampler.triggerAttack(noteName, playTime);
             
             // Reset gain after a short time to avoid affecting other playback
             track.effects.gain.gain.setValueAtTime(originalGain, playTime + 0.1);
             
-            log(`Sequencer triggered sampler for track ${trackIndex + 1}, volume: ${volume.toFixed(2)}`);
+            log(`Sequencer triggered sampler for track ${trackIndex + 1}, volume: ${volume.toFixed(2)}, note: ${noteName} (${semitones > 0 ? '+' : ''}${semitones})`);
             return track.sampler;
             
         } catch (error) {

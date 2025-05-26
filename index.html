@@ -8,11 +8,13 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <canvas id="particleCanvas"></canvas>
-    
-    <!-- Instrument zones overlay -->
-    <div class="instrument-zones">
-        <div class="instrument-zone" data-track="0">
+    <!-- Track Controls Section -->
+    <div class="track-controls">
+        <div class="controls-header">
+            <h3>Track Controls</h3>
+            <button id="minimize-controls" title="Minimize controls for full screen">⏸️</button>
+        </div>
+        <div class="track-control-row" data-track="0">
             <select class="track-selector" data-track="0">
                 <option value="synth">Synth</option>
                 <option value="piano">Piano</option>
@@ -27,10 +29,37 @@
                 <option value="brass">Brass</option>
                 <option value="choir">Choir</option>
             </select>
-            <div class="zone-label">TRACK 1</div>
             <button class="sound-gen-btn" data-track="0" title="Generate sound from text">🎵</button>
+            <button class="effects-toggle-btn" data-track="0" title="Toggle effects panel">🎛️</button>
+            <div class="track-effects-panel" data-track="0">
+                <div class="effect-control">
+                    <label>Reverb</label>
+                    <input type="range" class="track-reverb" data-track="0" min="0" max="100" value="30">
+                    <span class="effect-value">30</span>
+                </div>
+                <div class="effect-control">
+                    <label>Delay</label>
+                    <input type="range" class="track-delay" data-track="0" min="0" max="100" value="0">
+                    <span class="effect-value">0</span>
+                </div>
+                <div class="effect-control">
+                    <label>Filter</label>
+                    <input type="range" class="track-filter" data-track="0" min="0" max="100" value="50">
+                    <span class="effect-value">50</span>
+                </div>
+                <div class="effect-control">
+                    <label>Volume</label>
+                    <input type="range" class="track-volume" data-track="0" min="0" max="100" value="70">
+                    <span class="effect-value">70</span>
+                </div>
+                <div class="effect-control">
+                    <label>Decay</label>
+                    <input type="range" class="track-decay" data-track="0" min="0" max="100" value="10">
+                    <span class="effect-value">10</span>
+                </div>
+            </div>
         </div>
-        <div class="instrument-zone" data-track="1">
+        <div class="track-control-row" data-track="1">
             <select class="track-selector" data-track="1">
                 <option value="piano" selected>Piano</option>
                 <option value="synth">Synth</option>
@@ -45,10 +74,37 @@
                 <option value="brass">Brass</option>
                 <option value="choir">Choir</option>
             </select>
-            <div class="zone-label">TRACK 2</div>
             <button class="sound-gen-btn" data-track="1" title="Generate sound from text">🎵</button>
+            <button class="effects-toggle-btn" data-track="1" title="Toggle effects panel">🎛️</button>
+            <div class="track-effects-panel" data-track="1">
+                <div class="effect-control">
+                    <label>Reverb</label>
+                    <input type="range" class="track-reverb" data-track="1" min="0" max="100" value="30">
+                    <span class="effect-value">30</span>
+                </div>
+                <div class="effect-control">
+                    <label>Delay</label>
+                    <input type="range" class="track-delay" data-track="1" min="0" max="100" value="0">
+                    <span class="effect-value">0</span>
+                </div>
+                <div class="effect-control">
+                    <label>Filter</label>
+                    <input type="range" class="track-filter" data-track="1" min="0" max="100" value="50">
+                    <span class="effect-value">50</span>
+                </div>
+                <div class="effect-control">
+                    <label>Volume</label>
+                    <input type="range" class="track-volume" data-track="1" min="0" max="100" value="70">
+                    <span class="effect-value">70</span>
+                </div>
+                <div class="effect-control">
+                    <label>Decay</label>
+                    <input type="range" class="track-decay" data-track="1" min="0" max="100" value="10">
+                    <span class="effect-value">10</span>
+                </div>
+            </div>
         </div>
-        <div class="instrument-zone" data-track="2">
+        <div class="track-control-row" data-track="2">
             <select class="track-selector" data-track="2">
                 <option value="strings" selected>Strings</option>
                 <option value="synth">Synth</option>
@@ -63,10 +119,37 @@
                 <option value="brass">Brass</option>
                 <option value="choir">Choir</option>
             </select>
-            <div class="zone-label">TRACK 3</div>
             <button class="sound-gen-btn" data-track="2" title="Generate sound from text">🎵</button>
+            <button class="effects-toggle-btn" data-track="2" title="Toggle effects panel">🎛️</button>
+            <div class="track-effects-panel" data-track="2">
+                <div class="effect-control">
+                    <label>Reverb</label>
+                    <input type="range" class="track-reverb" data-track="2" min="0" max="100" value="30">
+                    <span class="effect-value">30</span>
+                </div>
+                <div class="effect-control">
+                    <label>Delay</label>
+                    <input type="range" class="track-delay" data-track="2" min="0" max="100" value="0">
+                    <span class="effect-value">0</span>
+                </div>
+                <div class="effect-control">
+                    <label>Filter</label>
+                    <input type="range" class="track-filter" data-track="2" min="0" max="100" value="50">
+                    <span class="effect-value">50</span>
+                </div>
+                <div class="effect-control">
+                    <label>Volume</label>
+                    <input type="range" class="track-volume" data-track="2" min="0" max="100" value="70">
+                    <span class="effect-value">70</span>
+                </div>
+                <div class="effect-control">
+                    <label>Decay</label>
+                    <input type="range" class="track-decay" data-track="2" min="0" max="100" value="10">
+                    <span class="effect-value">10</span>
+                </div>
+            </div>
         </div>
-        <div class="instrument-zone" data-track="3">
+        <div class="track-control-row" data-track="3">
             <select class="track-selector" data-track="3">
                 <option value="bells" selected>Bells</option>
                 <option value="synth">Synth</option>
@@ -81,10 +164,37 @@
                 <option value="brass">Brass</option>
                 <option value="choir">Choir</option>
             </select>
-            <div class="zone-label">TRACK 4</div>
             <button class="sound-gen-btn" data-track="3" title="Generate sound from text">🎵</button>
+            <button class="effects-toggle-btn" data-track="3" title="Toggle effects panel">🎛️</button>
+            <div class="track-effects-panel" data-track="3">
+                <div class="effect-control">
+                    <label>Reverb</label>
+                    <input type="range" class="track-reverb" data-track="3" min="0" max="100" value="30">
+                    <span class="effect-value">30</span>
+                </div>
+                <div class="effect-control">
+                    <label>Delay</label>
+                    <input type="range" class="track-delay" data-track="3" min="0" max="100" value="0">
+                    <span class="effect-value">0</span>
+                </div>
+                <div class="effect-control">
+                    <label>Filter</label>
+                    <input type="range" class="track-filter" data-track="3" min="0" max="100" value="50">
+                    <span class="effect-value">50</span>
+                </div>
+                <div class="effect-control">
+                    <label>Volume</label>
+                    <input type="range" class="track-volume" data-track="3" min="0" max="100" value="70">
+                    <span class="effect-value">70</span>
+                </div>
+                <div class="effect-control">
+                    <label>Decay</label>
+                    <input type="range" class="track-decay" data-track="3" min="0" max="100" value="10">
+                    <span class="effect-value">10</span>
+                </div>
+            </div>
         </div>
-        <div class="instrument-zone" data-track="4">
+        <div class="track-control-row" data-track="4">
             <select class="track-selector" data-track="4">
                 <option value="pad" selected>Pad</option>
                 <option value="synth">Synth</option>
@@ -99,10 +209,37 @@
                 <option value="brass">Brass</option>
                 <option value="choir">Choir</option>
             </select>
-            <div class="zone-label">TRACK 5</div>
             <button class="sound-gen-btn" data-track="4" title="Generate sound from text">🎵</button>
+            <button class="effects-toggle-btn" data-track="4" title="Toggle effects panel">🎛️</button>
+            <div class="track-effects-panel" data-track="4">
+                <div class="effect-control">
+                    <label>Reverb</label>
+                    <input type="range" class="track-reverb" data-track="4" min="0" max="100" value="30">
+                    <span class="effect-value">30</span>
+                </div>
+                <div class="effect-control">
+                    <label>Delay</label>
+                    <input type="range" class="track-delay" data-track="4" min="0" max="100" value="0">
+                    <span class="effect-value">0</span>
+                </div>
+                <div class="effect-control">
+                    <label>Filter</label>
+                    <input type="range" class="track-filter" data-track="4" min="0" max="100" value="50">
+                    <span class="effect-value">50</span>
+                </div>
+                <div class="effect-control">
+                    <label>Volume</label>
+                    <input type="range" class="track-volume" data-track="4" min="0" max="100" value="70">
+                    <span class="effect-value">70</span>
+                </div>
+                <div class="effect-control">
+                    <label>Decay</label>
+                    <input type="range" class="track-decay" data-track="4" min="0" max="100" value="10">
+                    <span class="effect-value">10</span>
+                </div>
+            </div>
         </div>
-        <div class="instrument-zone" data-track="5">
+        <div class="track-control-row" data-track="5">
             <select class="track-selector" data-track="5">
                 <option value="lead" selected>Lead</option>
                 <option value="synth">Synth</option>
@@ -117,10 +254,37 @@
                 <option value="brass">Brass</option>
                 <option value="choir">Choir</option>
             </select>
-            <div class="zone-label">TRACK 6</div>
             <button class="sound-gen-btn" data-track="5" title="Generate sound from text">🎵</button>
+            <button class="effects-toggle-btn" data-track="5" title="Toggle effects panel">🎛️</button>
+            <div class="track-effects-panel" data-track="5">
+                <div class="effect-control">
+                    <label>Reverb</label>
+                    <input type="range" class="track-reverb" data-track="5" min="0" max="100" value="30">
+                    <span class="effect-value">30</span>
+                </div>
+                <div class="effect-control">
+                    <label>Delay</label>
+                    <input type="range" class="track-delay" data-track="5" min="0" max="100" value="0">
+                    <span class="effect-value">0</span>
+                </div>
+                <div class="effect-control">
+                    <label>Filter</label>
+                    <input type="range" class="track-filter" data-track="5" min="0" max="100" value="50">
+                    <span class="effect-value">50</span>
+                </div>
+                <div class="effect-control">
+                    <label>Volume</label>
+                    <input type="range" class="track-volume" data-track="5" min="0" max="100" value="70">
+                    <span class="effect-value">70</span>
+                </div>
+                <div class="effect-control">
+                    <label>Decay</label>
+                    <input type="range" class="track-decay" data-track="5" min="0" max="100" value="10">
+                    <span class="effect-value">10</span>
+                </div>
+            </div>
         </div>
-        <div class="instrument-zone" data-track="6">
+        <div class="track-control-row" data-track="6">
             <select class="track-selector" data-track="6">
                 <option value="pluck" selected>Pluck</option>
                 <option value="synth">Synth</option>
@@ -135,10 +299,37 @@
                 <option value="brass">Brass</option>
                 <option value="choir">Choir</option>
             </select>
-            <div class="zone-label">TRACK 7</div>
             <button class="sound-gen-btn" data-track="6" title="Generate sound from text">🎵</button>
+            <button class="effects-toggle-btn" data-track="6" title="Toggle effects panel">🎛️</button>
+            <div class="track-effects-panel" data-track="6">
+                <div class="effect-control">
+                    <label>Reverb</label>
+                    <input type="range" class="track-reverb" data-track="6" min="0" max="100" value="30">
+                    <span class="effect-value">30</span>
+                </div>
+                <div class="effect-control">
+                    <label>Delay</label>
+                    <input type="range" class="track-delay" data-track="6" min="0" max="100" value="0">
+                    <span class="effect-value">0</span>
+                </div>
+                <div class="effect-control">
+                    <label>Filter</label>
+                    <input type="range" class="track-filter" data-track="6" min="0" max="100" value="50">
+                    <span class="effect-value">50</span>
+                </div>
+                <div class="effect-control">
+                    <label>Volume</label>
+                    <input type="range" class="track-volume" data-track="6" min="0" max="100" value="70">
+                    <span class="effect-value">70</span>
+                </div>
+                <div class="effect-control">
+                    <label>Decay</label>
+                    <input type="range" class="track-decay" data-track="6" min="0" max="100" value="10">
+                    <span class="effect-value">10</span>
+                </div>
+            </div>
         </div>
-        <div class="instrument-zone" data-track="7">
+        <div class="track-control-row" data-track="7">
             <select class="track-selector" data-track="7">
                 <option value="bass" selected>Bass</option>
                 <option value="synth">Synth</option>
@@ -153,10 +344,120 @@
                 <option value="brass">Brass</option>
                 <option value="choir">Choir</option>
             </select>
-            <div class="zone-label">TRACK 8</div>
             <button class="sound-gen-btn" data-track="7" title="Generate sound from text">🎵</button>
+            <button class="effects-toggle-btn" data-track="7" title="Toggle effects panel">🎛️</button>
+            <div class="track-effects-panel" data-track="7">
+                <div class="effect-control">
+                    <label>Reverb</label>
+                    <input type="range" class="track-reverb" data-track="7" min="0" max="100" value="30">
+                    <span class="effect-value">30</span>
+                </div>
+                <div class="effect-control">
+                    <label>Delay</label>
+                    <input type="range" class="track-delay" data-track="7" min="0" max="100" value="0">
+                    <span class="effect-value">0</span>
+                </div>
+                <div class="effect-control">
+                    <label>Filter</label>
+                    <input type="range" class="track-filter" data-track="7" min="0" max="100" value="50">
+                    <span class="effect-value">50</span>
+                </div>
+                <div class="effect-control">
+                    <label>Volume</label>
+                    <input type="range" class="track-volume" data-track="7" min="0" max="100" value="70">
+                    <span class="effect-value">70</span>
+                </div>
+                <div class="effect-control">
+                    <label>Decay</label>
+                    <input type="range" class="track-decay" data-track="7" min="0" max="100" value="10">
+                    <span class="effect-value">10</span>
+                </div>
+            </div>
         </div>
     </div>
+    
+    <!-- Minimized Controls Bar -->
+    <div class="minimized-controls" style="display: none;">
+        <button id="restore-controls" title="Restore track controls">🎛️</button>
+        <div class="mini-track-indicators">
+            <div class="mini-track" data-track="0">1</div>
+            <div class="mini-track" data-track="1">2</div>
+            <div class="mini-track" data-track="2">3</div>
+            <div class="mini-track" data-track="3">4</div>
+            <div class="mini-track" data-track="4">5</div>
+            <div class="mini-track" data-track="5">6</div>
+            <div class="mini-track" data-track="6">7</div>
+            <div class="mini-track" data-track="7">8</div>
+        </div>
+    </div>
+    
+    <!-- Top Menu Bar -->
+    <div class="top-menu">
+        <button class="menu-item" id="sounds-menu">Sounds</button>
+        <button class="menu-item" id="tracks-menu">Tracks</button>
+        <button class="menu-item" id="profile-menu">Profile</button>
+        <button class="menu-item" id="panic">Stop All</button>
+        <button class="menu-item" id="preset">Presets</button>
+        <button class="menu-item" id="view-toggle">Grid View</button>
+        <button class="menu-item" id="single-view-toggle">Single Track</button>
+    </div>
+    
+    <!-- Canvas for particle effects -->
+    <canvas id="particleCanvas"></canvas>
+    
+    <!-- Multi-track View -->
+    <div class="multi-track-view">
+        <!-- Instrument zones overlay -->
+        <div class="instrument-zones">
+        <div class="instrument-zone" data-track="0">
+        </div>
+        <div class="instrument-zone" data-track="1">
+        </div>
+        <div class="instrument-zone" data-track="2">
+        </div>
+        <div class="instrument-zone" data-track="3">
+        </div>
+        <div class="instrument-zone" data-track="4">
+        </div>
+        <div class="instrument-zone" data-track="5">
+        </div>
+        <div class="instrument-zone" data-track="6">
+        </div>
+        <div class="instrument-zone" data-track="7">
+        </div>
+    </div>
+    </div>
+    
+    <!-- Grid Sequencer View -->
+    <div class="grid-sequencer" style="display: none;">
+        <div class="sequencer-controls">
+            <button id="sequencer-play">▶ Play</button>
+            <button id="sequencer-stop">◼ Stop</button>
+            <button id="sequencer-clear">Clear</button>
+        </div>
+        <div class="sequencer-grid">
+            <!-- Grid will be generated by JavaScript -->
+        </div>
+    </div>
+    
+    <!-- Single Track View -->
+    <div class="single-track-view" style="display: none;">
+        <div class="single-track-header">
+            <h3>Single Track Mode</h3>
+            <select id="single-track-select">
+                <option value="0">Track 1</option>
+                <option value="1">Track 2</option>
+                <option value="2">Track 3</option>
+                <option value="3">Track 4</option>
+                <option value="4">Track 5</option>
+                <option value="5">Track 6</option>
+                <option value="6">Track 7</option>
+                <option value="7">Track 8</option>
+            </select>
+        </div>
+        <canvas id="singleTrackCanvas"></canvas>
+    </div>
+    
     
     <div class="control-panel">
         <div class="panel-header">
@@ -205,37 +506,36 @@
                 </div>
                 
                 <div class="control-item">
-                    <label>Decay</label>
-                    <input type="range" id="decay" min="0" max="100" value="10">
-                    <span id="decayValue">0.2s</span>
+                    <label>BPM</label>
+                    <input type="range" id="bpm" min="60" max="200" value="120">
+                    <span id="bpmValue">120</span>
                 </div>
+                
+                <div class="control-item">
+                    <label>Time Sig</label>
+                    <select id="timesig">
+                        <option value="4/4" selected>4/4</option>
+                        <option value="3/4">3/4</option>
+                        <option value="6/8">6/8</option>
+                        <option value="5/4">5/4</option>
+                    </select>
+                </div>
+                
+                <div class="control-item">
+                    <label>Metronome</label>
+                    <button id="metronome-toggle" class="metro-btn">Off</button>
+                </div>
+                
             </div>
             
-            <div class="effects-row">
-                <div class="effect-control">
-                    <label>Reverb</label>
-                    <input type="range" id="reverb" min="0" max="100" value="30">
-                </div>
-                <div class="effect-control">
-                    <label>Delay</label>
-                    <input type="range" id="delay" min="0" max="100" value="0">
-                </div>
-                <div class="effect-control">
-                    <label>Filter</label>
-                    <input type="range" id="filter" min="0" max="100" value="50">
-                </div>
-                <div class="effect-control">
-                    <label>Volume</label>
-                    <input type="range" id="volume" min="0" max="100" value="70">
-                </div>
-            </div>
             
             <div class="action-buttons">
                 <button id="record">● Record</button>
                 <button id="play">▶ Play</button>
                 <button id="clear">Clear</button>
+                <button id="loop-toggle" class="loop-btn">Loop Off</button>
                 <button id="preset">Presets</button>
-                <button id="panic">Stop All</button>
+                <button id="panic2">Stop All</button>
                 <button id="help">?</button>
             </div>
         </div>

@@ -7,6 +7,7 @@ canvas.height = window.innerHeight;
 // Audio engine
 const audioEngine = new AudioEngine();
 
+
 // Touch handling
 const touches = new Map();
 const particles = [];
@@ -41,7 +42,8 @@ const colorThemes = {
 
 // Track setup
 const numTracks = 8;
-let rowHeight = window.innerHeight / numTracks;
+const topMenuHeight = 60; // Height of top menu
+let rowHeight = (window.innerHeight - topMenuHeight) / numTracks;
 
 class TouchParticle {
     constructor(x, y, color, note) {
@@ -124,7 +126,9 @@ class TouchIndicator {
 
 // Get track and instrument from Y position
 function getTrackFromY(y) {
-    const trackIndex = Math.floor(y / rowHeight);
+    // Account for top menu offset
+    const adjustedY = y - topMenuHeight;
+    const trackIndex = Math.floor(adjustedY / rowHeight);
     return Math.min(Math.max(0, trackIndex), numTracks - 1);
 }
 
@@ -161,6 +165,14 @@ function handleTouchStart(e) {
         const x = touch.clientX - rect.left;
         const y = touch.clientY - rect.top;
         
+        // Skip touches on the control section
+        const controlsWidth = getControlsWidth();
+        if (x < controlsWidth) continue;
+        
+        // Adjust X coordinate for control section
+        const adjustedX = x - controlsWidth;
+        const adjustedWidth = canvas.width - controlsWidth;
+        
         // Determine track and instrument
         const trackIndex = getTrackFromY(y);
         const instrument = trackConfigs[trackIndex].instrument;
@@ -169,7 +181,7 @@ function handleTouchStart(e) {
         
         // Use local Y position within the row for note calculation
         const localY = y % rowHeight;
-        const { frequency, midiNote } = audioEngine.playNoteOrSample(x, localY, canvas.width, rowHeight, touch.identifier, trackIndex, instrument);
+        const { frequency, midiNote } = audioEngine.playNoteOrSample(adjustedX, localY, adjustedWidth, rowHeight, touch.identifier, trackIndex, instrument);
         const noteName = getMidiNoteName(midiNote);
         
         const colors = colorThemes[instrument] || colorThemes.synth;
@@ -317,8 +329,8 @@ function animate() {
     // Draw track dividers
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.lineWidth = 1;
-    for (let i = 1; i < numTracks; i++) {
-        const y = i * rowHeight;
+    for (let i = 0; i <= numTracks; i++) {
+        const y = i * rowHeight + topMenuHeight;
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(canvas.width, y);
@@ -374,6 +386,13 @@ document.querySelectorAll('.track-selector').forEach(selector => {
         const trackIndex = parseInt(e.target.dataset.track);
         const instrument = e.target.value;
         trackConfigs[trackIndex].instrument = instrument;
+        
+        // Update audio engine
+        audioEngine.setTrackInstrument(trackIndex, instrument);
+        
+        // Update grid labels if in grid view
+        updateTrackLabels();
+        
         console.log(`Track ${trackIndex + 1} changed to ${instrument}`);
     });
 });
@@ -392,40 +411,55 @@ document.getElementById('octave').addEventListener('input', (e) => {
     document.getElementById('octaveValue').textContent = e.target.value;
 });
 
-document.getElementById('decay').addEventListener('input', (e) => {
+// Global effects removed - now using per-track effects
+
+// BPM control
+document.getElementById('bpm').addEventListener('input', (e) => {
     const value = parseInt(e.target.value);
-    audioEngine.sustainTime = (value / 100) * 2;
-    document.getElementById('decayValue').textContent = audioEngine.sustainTime.toFixed(1) + 's';
+    audioEngine.setBPM(value);
+    document.getElementById('bpmValue').textContent = value;
 });
 
-// Effects
-document.getElementById('reverb').addEventListener('input', (e) => {
-    audioEngine.updateEffects(
-        parseInt(document.getElementById('reverb').value),
-        parseInt(document.getElementById('delay').value),
-        parseInt(document.getElementById('filter').value)
-    );
+// Time signature control
+document.getElementById('timesig').addEventListener('change', (e) => {
+    const [numerator, denominator] = e.target.value.split('/').map(Number);
+    audioEngine.setTimeSignature(numerator, denominator);
 });
 
-document.getElementById('delay').addEventListener('input', (e) => {
-    audioEngine.updateEffects(
-        parseInt(document.getElementById('reverb').value),
-        parseInt(document.getElementById('delay').value),
-        parseInt(document.getElementById('filter').value)
-    );
+// Metronome toggle
+let metronomeActive = false;
+document.getElementById('metronome-toggle').addEventListener('click', (e) => {
+    metronomeActive = !metronomeActive;
+    audioEngine.setMetronomeEnabled(metronomeActive);
+    
+    const btn = e.target;
+    if (metronomeActive) {
+        btn.textContent = 'On';
+        btn.classList.add('active');
+        // Start the sequencer to hear the metronome
+        audioEngine.startSequencer();
+    } else {
+        btn.textContent = 'Off';
+        btn.classList.remove('active');
+        // Stop the sequencer when metronome is off
+        audioEngine.stopSequencer();
+    }
 });
 
-document.getElementById('filter').addEventListener('input', (e) => {
-    audioEngine.updateEffects(
-        parseInt(document.getElementById('reverb').value),
-        parseInt(document.getElementById('delay').value),
-        parseInt(document.getElementById('filter').value)
-    );
-});
-
-document.getElementById('volume').addEventListener('input', (e) => {
-    const value = parseInt(e.target.value) / 100;
-    audioEngine.masterGain.gain.setTargetAtTime(value, audioEngine.audioContext.currentTime, 0.01);
+// Loop recording toggle
+let loopEnabled = false;
+document.getElementById('loop-toggle').addEventListener('click', (e) => {
+    loopEnabled = !loopEnabled;
+    audioEngine.setLoopRecording(loopEnabled);
+    
+    const btn = e.target;
+    if (loopEnabled) {
+        btn.textContent = 'Loop On';
+        btn.classList.add('active');
+    } else {
+        btn.textContent = 'Loop Off';
+        btn.classList.remove('active');
+    }
 });
 
 // Recording
@@ -438,11 +472,21 @@ document.getElementById('record').addEventListener('click', () => {
         isRecording = true;
         document.getElementById('record').textContent = '⬛ Stop';
         document.querySelector('.recording-indicator').style.display = 'block';
+        
+        // If loop is enabled and sequencer isn't running, start it
+        if (loopEnabled && !audioEngine.isPlaying) {
+            audioEngine.startSequencer();
+        }
     } else {
         recordedNotes = audioEngine.stopRecording();
         isRecording = false;
         document.getElementById('record').textContent = '● Record';
         document.querySelector('.recording-indicator').style.display = 'none';
+        
+        // If loop recording, keep playing
+        if (!loopEnabled && audioEngine.isPlaying && !metronomeActive) {
+            audioEngine.stopSequencer();
+        }
     }
 });
 
@@ -476,6 +520,34 @@ document.getElementById('panic').addEventListener('click', () => {
     mouseDown = false;
     
     const btn = document.getElementById('panic');
+    btn.style.background = '#ff0000';
+    btn.textContent = 'Stopped!';
+    setTimeout(() => {
+        btn.style.background = '';
+        btn.textContent = 'Stop All';
+    }, 500);
+});
+
+// Second panic button
+document.getElementById('panic2').addEventListener('click', () => {
+    console.log('PANIC! Stopping all notes');
+    
+    try {
+        audioEngine.stopAllNotes();
+        // Also stop all samples
+        audioEngine.sampleVoices.forEach((voice, touchId) => {
+            audioEngine.stopSample(touchId);
+        });
+    } catch (e) {
+        console.error('Error in stopAllNotes:', e);
+    }
+    
+    touches.clear();
+    touchIndicators.forEach(indicator => indicator.remove());
+    touchIndicators.clear();
+    mouseDown = false;
+    
+    const btn = document.getElementById('panic2');
     btn.style.background = '#ff0000';
     btn.textContent = 'Stopped!';
     setTimeout(() => {
@@ -575,21 +647,57 @@ document.querySelectorAll('.preset-btn').forEach(btn => {
                 }
             });
             
-            document.getElementById('reverb').value = settings.reverb;
-            document.getElementById('delay').value = settings.delay;
-            document.getElementById('filter').value = settings.filter;
+            // Apply effects to all tracks
+            for (let i = 0; i < 8; i++) {
+                // Update reverb
+                const reverbSlider = document.querySelector(`.track-reverb[data-track="${i}"]`);
+                if (reverbSlider) {
+                    reverbSlider.value = settings.reverb;
+                    audioEngine.setTrackReverb(i, settings.reverb);
+                    const reverbValue = reverbSlider.nextElementSibling;
+                    if (reverbValue) reverbValue.textContent = settings.reverb;
+                }
+                
+                // Update delay
+                const delaySlider = document.querySelector(`.track-delay[data-track="${i}"]`);
+                if (delaySlider) {
+                    delaySlider.value = settings.delay;
+                    audioEngine.setTrackDelay(i, settings.delay);
+                    const delayValue = delaySlider.nextElementSibling;
+                    if (delayValue) delayValue.textContent = settings.delay;
+                }
+                
+                // Update filter
+                const filterSlider = document.querySelector(`.track-filter[data-track="${i}"]`);
+                if (filterSlider) {
+                    filterSlider.value = settings.filter;
+                    audioEngine.setTrackFilter(i, settings.filter);
+                    const filterValue = filterSlider.nextElementSibling;
+                    if (filterValue) filterValue.textContent = settings.filter;
+                }
+                
+                // Update volume
+                const volumeSlider = document.querySelector(`.track-volume[data-track="${i}"]`);
+                if (volumeSlider) {
+                    volumeSlider.value = settings.volume;
+                    audioEngine.setTrackVolume(i, settings.volume);
+                    const volumeValue = volumeSlider.nextElementSibling;
+                    if (volumeValue) volumeValue.textContent = settings.volume;
+                }
+                
+                // Update decay
+                const decaySlider = document.querySelector(`.track-decay[data-track="${i}"]`);
+                if (decaySlider) {
+                    decaySlider.value = settings.decay;
+                    audioEngine.setTrackDecay(i, settings.decay);
+                    const decayValue = decaySlider.nextElementSibling;
+                    if (decayValue) decayValue.textContent = settings.decay;
+                }
+            }
+            
+            // Update scale
             document.getElementById('scale').value = settings.scale;
-            document.getElementById('decay').value = settings.decay;
-            document.getElementById('volume').value = settings.volume;
-            
             audioEngine.currentScale = settings.scale;
-            audioEngine.sustainTime = (settings.decay / 100) * 2;
-            document.getElementById('decayValue').textContent = audioEngine.sustainTime.toFixed(1) + 's';
-            
-            const volume = settings.volume / 100;
-            audioEngine.masterGain.gain.setTargetAtTime(volume, audioEngine.audioContext.currentTime, 0.01);
-            
-            audioEngine.updateEffects(settings.reverb, settings.delay, settings.filter);
         }
         
         document.querySelector('.preset-menu').style.display = 'none';
@@ -628,13 +736,13 @@ window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     
-    // Update row height
-    rowHeight = window.innerHeight / numTracks;
+    // Update row height accounting for top menu
+    rowHeight = (window.innerHeight - topMenuHeight) / numTracks;
     
     // Update instrument zones
     document.querySelectorAll('.instrument-zone').forEach((zone, index) => {
         zone.style.height = `${rowHeight}px`;
-        zone.style.top = `${index * rowHeight}px`;
+        zone.style.top = `${index * rowHeight + topMenuHeight}px`;
     });
 });
 
@@ -648,6 +756,331 @@ document.querySelectorAll('.instrument-zone').forEach((zone, index) => {
 document.body.addEventListener('touchmove', (e) => {
     e.preventDefault();
 }, { passive: false });
+
+// View toggle
+let isGridView = false;
+let currentViewMode = 'multi'; // Global variable for view mode
+
+// Grid sequencer functions
+function generateSequencerGrid() {
+    const grid = document.querySelector('.sequencer-grid');
+    if (!grid) return;
+    
+    grid.innerHTML = '';
+    
+    for (let track = 0; track < 8; track++) {
+        const trackRow = document.createElement('div');
+        trackRow.className = 'track-row';
+        
+        const label = document.createElement('div');
+        label.className = 'track-label';
+        label.textContent = `Track ${track + 1}`;
+        trackRow.appendChild(label);
+        
+        const beatSlots = document.createElement('div');
+        beatSlots.className = 'beat-slots';
+        
+        // Create resolution selector for this track
+        const resolutionSelect = document.createElement('select');
+        resolutionSelect.className = 'track-resolution';
+        resolutionSelect.dataset.track = track;
+        resolutionSelect.innerHTML = `
+            <option value="quarter">1/4</option>
+            <option value="eighth">1/8</option>
+            <option value="sixteenth">1/16</option>
+        `;
+        trackRow.appendChild(resolutionSelect);
+        
+        // Always show 64 beats (maximum resolution) but size them based on track resolution
+        const resolution = resolutionSelect.value;
+        
+        for (let beat = 0; beat < 64; beat++) {
+            const slot = document.createElement('div');
+            slot.className = 'beat-slot';
+            slot.dataset.track = track;
+            slot.dataset.beat = beat;
+            slot.dataset.resolution = resolution;
+            
+            // Add bar boundary styling (every 16 beats)
+            if (beat % 16 === 0 && beat > 0) {
+                slot.classList.add('bar-start');
+            }
+            
+            // Size and visibility based on resolution
+            if (resolution === 'quarter') {
+                // Quarter notes: show every 4th beat, make them 4x wider
+                if (beat % 4 === 0) {
+                    slot.classList.add('quarter-note');
+                } else {
+                    slot.style.display = 'none';
+                }
+            } else if (resolution === 'eighth') {
+                // Eighth notes: show every 2nd beat, make them 2x wider
+                if (beat % 2 === 0) {
+                    slot.classList.add('eighth-note');
+                } else {
+                    slot.style.display = 'none';
+                }
+            } else {
+                // Sixteenth notes: show all beats, normal size
+                slot.classList.add('sixteenth-note');
+            }
+            
+            // Click handler for beat slots
+            slot.addEventListener('click', () => {
+                const isActive = slot.classList.contains('active');
+                slot.classList.toggle('active');
+                audioEngine.setSequencerBeat(track, beat, !isActive, resolution);
+            });
+            
+            beatSlots.appendChild(slot);
+        }
+        
+        // Handle resolution changes
+        resolutionSelect.addEventListener('change', () => {
+            // Regenerate this track's beats
+            generateTrackBeats(track, beatSlots, resolutionSelect.value);
+        });
+        
+        trackRow.appendChild(beatSlots);
+        grid.appendChild(trackRow);
+    }
+}
+
+function generateTrackBeats(track, beatSlots, resolution) {
+    // Update existing beats instead of clearing
+    const slots = beatSlots.querySelectorAll('.beat-slot');
+    
+    slots.forEach((slot, beat) => {
+        slot.dataset.resolution = resolution;
+        
+        // Remove old resolution classes
+        slot.classList.remove('quarter-note', 'eighth-note', 'sixteenth-note');
+        slot.style.display = '';
+        
+        // Size and visibility based on resolution
+        if (resolution === 'quarter') {
+            // Quarter notes: show every 4th beat, make them 4x wider
+            if (beat % 4 === 0) {
+                slot.classList.add('quarter-note');
+            } else {
+                slot.style.display = 'none';
+            }
+        } else if (resolution === 'eighth') {
+            // Eighth notes: show every 2nd beat, make them 2x wider
+            if (beat % 2 === 0) {
+                slot.classList.add('eighth-note');
+            } else {
+                slot.style.display = 'none';
+            }
+        } else {
+            // Sixteenth notes: show all beats, normal size
+            slot.classList.add('sixteenth-note');
+        }
+    });
+}
+
+function updateTrackLabels() {
+    document.querySelectorAll('.track-label').forEach((label, index) => {
+        const instrument = trackConfigs[index].instrument;
+        label.textContent = `Track ${index + 1} - ${instrument.charAt(0).toUpperCase() + instrument.slice(1)}`;
+    });
+}
+
+// View mode handling
+let currentMode = 'multi'; // 'multi', 'grid', 'single'
+
+document.getElementById('view-toggle').addEventListener('click', () => {
+    const viewToggleBtn = document.getElementById('view-toggle');
+    const gridSequencer = document.querySelector('.grid-sequencer');
+    
+    if (currentMode === 'multi') {
+        currentMode = 'grid';
+        currentViewMode = 'grid'; // Update global variable
+        isGridView = true;
+        canvas.style.display = 'none';
+        document.querySelector('.instrument-zones').style.display = 'none';
+        document.querySelector('.single-track-view').style.display = 'none';
+        gridSequencer.style.display = 'block';
+        viewToggleBtn.textContent = 'Multi Track';
+        
+        // Check if controls are minimized
+        if (controlsMinimized) {
+            gridSequencer.classList.add('fullscreen');
+        }
+        
+        // Update track labels in grid
+        updateTrackLabels();
+    } else {
+        currentMode = 'multi';
+        currentViewMode = 'multi';
+        isGridView = false;
+        canvas.style.display = 'block';
+        document.querySelector('.instrument-zones').style.display = 'block';
+        gridSequencer.style.display = 'none';
+        document.querySelector('.single-track-view').style.display = 'none';
+        viewToggleBtn.textContent = 'Grid View';
+    }
+});
+
+// Single track view toggle
+document.getElementById('single-view-toggle').addEventListener('click', () => {
+    if (currentMode !== 'single') {
+        currentMode = 'single';
+        currentViewMode = 'single';
+        canvas.style.display = 'none';
+        document.querySelector('.instrument-zones').style.display = 'none';
+        gridSequencer.style.display = 'none';
+        document.querySelector('.single-track-view').style.display = 'block';
+        document.getElementById('single-view-toggle').textContent = 'Multi Track';
+        
+        // Check if controls are minimized
+        if (controlsMinimized) {
+            document.querySelector('.single-track-view').classList.add('fullscreen');
+        }
+    } else {
+        currentMode = 'multi';
+        currentViewMode = 'multi';
+        canvas.style.display = 'block';
+        document.querySelector('.instrument-zones').style.display = 'block';
+        document.querySelector('.single-track-view').style.display = 'none';
+        document.getElementById('single-view-toggle').textContent = 'Single Track';
+    }
+});
+
+// Update beat playback indicator
+let lastBeat = -1;
+let sequencerStartTime = 0;
+
+function updateBeatIndicator() {
+    if (isGridView && audioEngine.isPlaying) {
+        // Calculate visual beat based on actual audio time for perfect sync
+        const currentAudioTime = audioEngine.audioContext.currentTime;
+        const secondsPerBeat = 60.0 / audioEngine.bpm;
+        
+        // Calculate how much time has passed since the sequencer started playing
+        if (sequencerStartTime === 0) {
+            sequencerStartTime = currentAudioTime;
+        }
+        
+        const elapsedTime = currentAudioTime - sequencerStartTime;
+        const quarterNoteBeat = Math.floor(elapsedTime / secondsPerBeat) % 16;
+        
+        // Remove playing class from all previous beats
+        document.querySelectorAll('.beat-slot.playing').forEach(slot => {
+            slot.classList.remove('playing');
+        });
+        
+        // Add playing class based on each track's resolution
+        document.querySelectorAll('.track-row').forEach((trackRow, trackIndex) => {
+            const resolutionSelect = trackRow.querySelector('.track-resolution');
+            const resolution = resolutionSelect ? resolutionSelect.value : 'quarter';
+            
+            let visualBeat = quarterNoteBeat;
+            
+            if (resolution === 'quarter') {
+                // Quarter notes: highlight every 4th beat
+                visualBeat = quarterNoteBeat * 4;
+            } else if (resolution === 'eighth') {
+                // For eighth notes, calculate which of the 2 sub-beats we're on
+                const subBeatProgress = (elapsedTime % secondsPerBeat) / secondsPerBeat;
+                const eighthSubBeat = Math.floor(subBeatProgress * 2);
+                visualBeat = (quarterNoteBeat * 2 + eighthSubBeat) * 2; // Show every 2nd beat
+            } else if (resolution === 'sixteenth') {
+                // For sixteenth notes, calculate which of the 4 sub-beats we're on
+                const subBeatProgress = (elapsedTime % secondsPerBeat) / secondsPerBeat;
+                const sixteenthSubBeat = Math.floor(subBeatProgress * 4);
+                visualBeat = quarterNoteBeat * 4 + sixteenthSubBeat;
+            }
+            
+            // Highlight the current beat for this track (only if it's visible)
+            const currentSlot = trackRow.querySelector(`.beat-slot[data-beat="${visualBeat}"]`);
+            if (currentSlot && currentSlot.style.display !== 'none') {
+                currentSlot.classList.add('playing');
+            }
+        });
+        
+        lastBeat = quarterNoteBeat;
+    } else {
+        // Reset when not playing
+        sequencerStartTime = 0;
+        document.querySelectorAll('.beat-slot.playing').forEach(slot => {
+            slot.classList.remove('playing');
+        });
+        lastBeat = -1;
+    }
+    
+    requestAnimationFrame(updateBeatIndicator);
+}
+
+// Sequencer controls
+document.getElementById('sequencer-play').addEventListener('click', async () => {
+    if (!audioEngine.isPlaying) {
+        console.log('Starting sequencer...');
+        // Check if any beats are active
+        let hasActiveBeats = false;
+        document.querySelectorAll('.beat-slot.active').forEach(() => {
+            hasActiveBeats = true;
+        });
+        
+        if (!hasActiveBeats && !metronomeActive) {
+            alert('No beats programmed! Click on the grid to add beats, or turn on the metronome.');
+            return;
+        }
+        
+        await audioEngine.startSequencer();
+        document.getElementById('sequencer-play').textContent = '⏸ Pause';
+    } else {
+        console.log('Stopping sequencer...');
+        audioEngine.stopSequencer();
+        document.getElementById('sequencer-play').textContent = '▶ Play';
+    }
+});
+
+document.getElementById('sequencer-stop').addEventListener('click', () => {
+    console.log('Stopping sequencer...');
+    audioEngine.stopSequencer();
+    document.getElementById('sequencer-play').textContent = '▶ Play';
+});
+
+document.getElementById('sequencer-clear').addEventListener('click', () => {
+    // Clear all beats
+    for (let track = 0; track < 8; track++) {
+        for (let beat = 0; beat < 64; beat++) {
+            audioEngine.setSequencerBeat(track, beat, false);
+        }
+    }
+    
+    // Update UI
+    document.querySelectorAll('.beat-slot').forEach(slot => {
+        slot.classList.remove('active');
+    });
+});
+
+// Initialize grid and sync track instruments
+generateSequencerGrid();
+updateBeatIndicator();
+
+// Sync track instruments with audio engine
+trackConfigs.forEach((config, index) => {
+    audioEngine.setTrackInstrument(index, config.instrument);
+});
+
+// Add a test pattern - simple kick pattern on track 7 (bass)
+// This helps verify the sequencer is working
+audioEngine.setSequencerBeat(7, 0, true);
+audioEngine.setSequencerBeat(7, 4, true);
+audioEngine.setSequencerBeat(7, 8, true);
+audioEngine.setSequencerBeat(7, 12, true);
+
+// Update UI to show test pattern
+setTimeout(() => {
+    document.querySelectorAll('.beat-slot[data-track="7"]').forEach((slot, index) => {
+        if (index === 0 || index === 4 || index === 8 || index === 12) {
+            slot.classList.add('active');
+        }
+    });
+}, 100); // Small delay to ensure grid is generated
 
 // Start animation
 animate();
@@ -853,3 +1286,172 @@ document.addEventListener('click', () => {
         audioInitialized = true;
     }
 }, { once: true });
+
+// Per-track effects handlers
+document.querySelectorAll('.effects-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const trackIndex = parseInt(btn.dataset.track);
+        const panel = document.querySelector(`.track-effects-panel[data-track="${trackIndex}"]`);
+        
+        // Close all other panels first
+        document.querySelectorAll('.track-effects-panel').forEach(p => {
+            if (p !== panel) {
+                p.classList.remove('active');
+            }
+        });
+        document.querySelectorAll('.effects-toggle-btn').forEach(b => {
+            if (b !== btn) {
+                b.classList.remove('active');
+            }
+        });
+        
+        // Toggle current panel
+        panel.classList.toggle('active');
+        btn.classList.toggle('active');
+    });
+});
+
+// Effects sliders handlers
+document.querySelectorAll('.track-reverb').forEach(slider => {
+    slider.addEventListener('input', (e) => {
+        const trackIndex = parseInt(slider.dataset.track);
+        const value = parseFloat(e.target.value);
+        audioEngine.setTrackReverb(trackIndex, value);
+        
+        // Update value display
+        const valueDisplay = e.target.nextElementSibling;
+        if (valueDisplay && valueDisplay.classList.contains('effect-value')) {
+            valueDisplay.textContent = Math.round(value);
+        }
+    });
+});
+
+document.querySelectorAll('.track-delay').forEach(slider => {
+    slider.addEventListener('input', (e) => {
+        const trackIndex = parseInt(slider.dataset.track);
+        const value = parseFloat(e.target.value);
+        audioEngine.setTrackDelay(trackIndex, value);
+        
+        // Update value display
+        const valueDisplay = e.target.nextElementSibling;
+        if (valueDisplay && valueDisplay.classList.contains('effect-value')) {
+            valueDisplay.textContent = Math.round(value);
+        }
+    });
+});
+
+document.querySelectorAll('.track-filter').forEach(slider => {
+    slider.addEventListener('input', (e) => {
+        const trackIndex = parseInt(slider.dataset.track);
+        const value = parseFloat(e.target.value);
+        audioEngine.setTrackFilter(trackIndex, value);
+        
+        // Update value display
+        const valueDisplay = e.target.nextElementSibling;
+        if (valueDisplay && valueDisplay.classList.contains('effect-value')) {
+            valueDisplay.textContent = Math.round(value);
+        }
+    });
+});
+
+document.querySelectorAll('.track-volume').forEach(slider => {
+    slider.addEventListener('input', (e) => {
+        const trackIndex = parseInt(slider.dataset.track);
+        const value = parseFloat(e.target.value);
+        audioEngine.setTrackVolume(trackIndex, value);
+        
+        // Update value display
+        const valueDisplay = e.target.nextElementSibling;
+        if (valueDisplay && valueDisplay.classList.contains('effect-value')) {
+            valueDisplay.textContent = Math.round(value);
+        }
+    });
+});
+
+document.querySelectorAll('.track-decay').forEach(slider => {
+    slider.addEventListener('input', (e) => {
+        const trackIndex = parseInt(slider.dataset.track);
+        const value = parseFloat(e.target.value);
+        audioEngine.setTrackDecay(trackIndex, value);
+        
+        // Update value display
+        const valueDisplay = e.target.nextElementSibling;
+        if (valueDisplay && valueDisplay.classList.contains('effect-value')) {
+            valueDisplay.textContent = Math.round(value);
+        }
+    });
+});
+
+// Minimize/Restore Controls
+let controlsMinimized = false;
+
+document.getElementById('minimize-controls').addEventListener('click', () => {
+    const trackControls = document.querySelector('.track-controls');
+    const minimizedControls = document.querySelector('.minimized-controls');
+    const instrumentZones = document.querySelector('.instrument-zones');
+    const topMenu = document.querySelector('.top-menu');
+    
+    trackControls.style.display = 'none';
+    minimizedControls.style.display = 'flex';
+    instrumentZones.classList.add('fullscreen');
+    topMenu.classList.add('fullscreen');
+    
+    controlsMinimized = true;
+    
+    // Update grid sequencer if in grid view
+    if (isGridView) {
+        gridSequencer.classList.add('fullscreen');
+    }
+    
+    // Update touch handling area
+    updateTouchHandling();
+});
+
+document.getElementById('restore-controls').addEventListener('click', () => {
+    const trackControls = document.querySelector('.track-controls');
+    const minimizedControls = document.querySelector('.minimized-controls');
+    const instrumentZones = document.querySelector('.instrument-zones');
+    const topMenu = document.querySelector('.top-menu');
+    
+    trackControls.style.display = 'block';
+    minimizedControls.style.display = 'none';
+    instrumentZones.classList.remove('fullscreen');
+    topMenu.classList.remove('fullscreen');
+    
+    controlsMinimized = false;
+    
+    // Update grid sequencer if in grid view
+    if (isGridView) {
+        gridSequencer.classList.remove('fullscreen');
+    }
+    
+    // Update touch handling area
+    updateTouchHandling();
+});
+
+function updateTouchHandling() {
+    // This function will be used to update touch coordinate calculations
+    // The touch handling in handleTouchStart will use this
+}
+
+// Update touch handling to be dynamic
+function getControlsWidth() {
+    return controlsMinimized ? 60 : 400;
+}
+
+// Top Menu Handlers
+document.getElementById('sounds-menu').addEventListener('click', () => {
+    // TODO: Open sounds library/manager
+    alert('Sounds menu - Coming soon!');
+});
+
+document.getElementById('tracks-menu').addEventListener('click', () => {
+    // TODO: Open tracks management (load/save/export)
+    alert('Tracks menu - Coming soon!');
+});
+
+document.getElementById('profile-menu').addEventListener('click', () => {
+    // TODO: Open user profile/settings
+    alert('Profile menu - Coming soon!');
+});

@@ -33,6 +33,9 @@ class AudioEngine {
         this.recording = false;
         this.recordedNotes = [];
         this.recordStartTime = 0;
+        this.loopRecording = false;
+        this.loopStartBeat = 0;
+        this.loopLength = 32; // 8 bars of 4 beats (or 4 bars with 8th notes)
         
         // Current instrument settings
         this.currentInstrument = 'synth';
@@ -44,6 +47,34 @@ class AudioEngine {
         // Sample storage for generated sounds
         this.samples = new Map(); // trackIndex -> { buffer, name, mode }
         this.sampleVoices = new Map(); // touchId -> bufferSource
+        
+        // Per-track effects chains
+        this.trackEffects = new Map(); // trackIndex -> { filter, delay, reverb, gain }
+        this.trackSustainTimes = new Map(); // trackIndex -> sustainTime
+        this.initializeTrackEffects();
+        this.initializeTrackSustainTimes();
+        
+        // Timing system
+        this.bpm = 120;
+        this.secondsPerBeat = 60.0 / this.bpm;
+        this.timeSignature = { numerator: 4, denominator: 4 };
+        this.isPlaying = false;
+        this.currentBeat = 0;
+        this.nextNoteTime = 0.0;
+        this.lookahead = 25.0; // How frequently to call scheduling function (in milliseconds)
+        this.scheduleAheadTime = 0.1; // How far ahead to schedule audio (sec) - smaller for better timing
+        this.metronomeEnabled = false;
+        this.timerWorker = null;
+        this.sequencerData = new Map(); // trackIndex -> array of active beats
+        this.scheduledNotes = new Set(); // Track already scheduled notes to prevent duplicates
+        
+        // Initialize timing worker and sequencer data
+        this.initializeTimingWorker();
+        this.initializeSequencerData();
+        
+        // Track instruments for sequencer
+        this.trackInstruments = new Map();
+        this.initializeTrackInstruments();
     }
     
     createReverb() {
@@ -162,13 +193,14 @@ class AudioEngine {
         return { frequency, midiNote };
     }
     
-    createVoice(frequency, touchId, instrument) {
+    createVoice(frequency, touchId, instrument, trackIndex = 0) {
         const now = this.audioContext.currentTime;
         const voice = {
             oscillators: [],
             gain: this.audioContext.createGain(),
             touchId: touchId,
-            instrument: instrument || this.currentInstrument
+            instrument: instrument || this.currentInstrument,
+            trackIndex: trackIndex
         };
         
         console.log(`Creating ${voice.instrument} voice at ${Math.round(frequency)}Hz`);
@@ -216,7 +248,15 @@ class AudioEngine {
                 break;
         }
         
-        voice.gain.connect(this.filter);
+        // Connect to per-track effects chain
+        const trackEffects = this.trackEffects.get(trackIndex);
+        if (trackEffects) {
+            voice.gain.connect(trackEffects.filter);
+        } else {
+            // Fallback to global effects
+            voice.gain.connect(this.filter);
+        }
+        
         voice.gain.gain.setValueAtTime(0, now);
         voice.gain.gain.linearRampToValueAtTime(0.3, now + 0.01);
         
@@ -744,14 +784,14 @@ class AudioEngine {
         voice.oscillators = oscillators;
     }
     
-    playNote(x, y, width, height, touchId, instrument) {
+    playNote(x, y, width, height, touchId, instrument, trackIndex = 0) {
         // Stop any existing note with this touchId first
         if (this.voices.has(touchId)) {
             this.stopNote(touchId);
         }
         
         const { frequency, midiNote } = this.getFrequency(x, y, width, height);
-        const voice = this.createVoice(frequency, touchId, instrument || this.currentInstrument);
+        const voice = this.createVoice(frequency, touchId, instrument || this.currentInstrument, trackIndex);
         
         this.voices.set(touchId, voice);
         
@@ -785,13 +825,15 @@ class AudioEngine {
                 voice.gain.gain.cancelScheduledValues(now);
                 voice.gain.gain.setValueAtTime(voice.gain.gain.value, now);
                 
-                // Use the configurable sustain time
-                voice.gain.gain.exponentialRampToValueAtTime(0.001, now + this.sustainTime);
+                // Use the track-specific sustain time
+                const sustainTime = this.getTrackSustainTime(voice.trackIndex);
+                voice.gain.gain.exponentialRampToValueAtTime(0.001, now + sustainTime);
             } catch (e) {
                 // If scheduling fails, just set to 0
                 voice.gain.gain.setValueAtTime(0, now);
             }
             
+            const sustainTime = this.getTrackSustainTime(voice.trackIndex);
             setTimeout(() => {
                 voice.oscillators.forEach(osc => {
                     try {
@@ -807,7 +849,7 @@ class AudioEngine {
                     // Already disconnected
                 }
                 this.voices.delete(touchId);
-            }, this.sustainTime * 1000 + 100);
+            }, sustainTime * 1000 + 100);
         }
     }
     
@@ -851,26 +893,28 @@ class AudioEngine {
         }, 100);
     }
     
+    // Global effects method - deprecated, using per-track effects instead
     updateEffects(reverb, delay, filter) {
-        this.reverb.setMix(reverb);
-        this.delay.setMix(delay);
-        this.delay.setTime(delay);
-        
-        const maxFreq = 20000;
-        const minFreq = 100;
-        const freq = minFreq + (filter / 100) * (maxFreq - minFreq);
-        this.filter.frequency.setTargetAtTime(freq, this.audioContext.currentTime, 0.01);
+        // No longer used - effects are now per-track
     }
     
     startRecording() {
         this.recording = true;
-        this.recordedNotes = [];
+        if (!this.loopRecording) {
+            // Clear previous recording if not in loop mode
+            this.recordedNotes = [];
+        }
         this.recordStartTime = this.audioContext.currentTime;
+        this.loopStartBeat = this.currentBeat;
     }
     
     stopRecording() {
         this.recording = false;
         return this.recordedNotes;
+    }
+    
+    setLoopRecording(enabled) {
+        this.loopRecording = enabled;
     }
     
     playRecording(notes) {
@@ -997,6 +1041,723 @@ class AudioEngine {
         }
         
         // Otherwise play synthesized note
-        return this.playNote(x, y, width, height, touchId, instrument);
+        return this.playNote(x, y, width, height, touchId, instrument, trackIndex);
+    }
+    
+    // Sample Management Methods
+    async loadSample(trackIndex, audioData, name) {
+        try {
+            const audioBuffer = await this.audioContext.decodeAudioData(audioData);
+            this.samples.set(trackIndex, {
+                buffer: audioBuffer,
+                name: name,
+                mode: false
+            });
+            return true;
+        } catch (error) {
+            console.error('Failed to load sample:', error);
+            return false;
+        }
+    }
+    
+    setSampleMode(trackIndex, enabled) {
+        const sample = this.samples.get(trackIndex);
+        if (sample) {
+            sample.mode = enabled;
+        }
+    }
+    
+    isSampleMode(trackIndex) {
+        const sample = this.samples.get(trackIndex);
+        return sample ? sample.mode : false;
+    }
+    
+    hasSample(trackIndex) {
+        return this.samples.has(trackIndex);
+    }
+    
+    getSampleBuffer(trackIndex) {
+        const sample = this.samples.get(trackIndex);
+        return sample ? sample.buffer : null;
+    }
+    
+    // Initialize per-track effects chains
+    initializeTrackEffects() {
+        for (let i = 0; i < 8; i++) {
+            const trackEffects = {
+                filter: this.audioContext.createBiquadFilter(),
+                delay: this.createDelay(),
+                reverb: this.createReverb(),
+                gain: this.audioContext.createGain()
+            };
+            
+            // Set default values
+            trackEffects.filter.type = 'lowpass';
+            trackEffects.filter.frequency.setValueAtTime(5000, this.audioContext.currentTime);
+            trackEffects.gain.gain.setValueAtTime(0.7, this.audioContext.currentTime);
+            
+            // Connect effects chain: input -> filter -> delay -> reverb -> gain -> master
+            trackEffects.filter.connect(trackEffects.delay.input);
+            trackEffects.delay.output.connect(trackEffects.reverb.input);
+            trackEffects.reverb.output.connect(trackEffects.gain);
+            trackEffects.gain.connect(this.masterGain);
+            
+            this.trackEffects.set(i, trackEffects);
+        }
+    }
+    
+    // Initialize per-track sustain times
+    initializeTrackSustainTimes() {
+        for (let i = 0; i < 8; i++) {
+            this.trackSustainTimes.set(i, 0.1); // Default 0.1 seconds
+        }
+    }
+    
+    // Get track effects chain
+    getTrackEffects(trackIndex) {
+        return this.trackEffects.get(trackIndex);
+    }
+    
+    // Set track effect values
+    setTrackReverb(trackIndex, value) {
+        const effects = this.trackEffects.get(trackIndex);
+        if (effects) {
+            effects.reverb.setMix(value);
+        }
+    }
+    
+    setTrackDelay(trackIndex, value) {
+        const effects = this.trackEffects.get(trackIndex);
+        if (effects) {
+            effects.delay.setMix(value);
+        }
+    }
+    
+    setTrackFilter(trackIndex, value) {
+        const effects = this.trackEffects.get(trackIndex);
+        if (effects) {
+            const frequency = 200 + (value / 100) * 19800; // 200Hz to 20kHz
+            effects.filter.frequency.setTargetAtTime(frequency, this.audioContext.currentTime, 0.01);
+        }
+    }
+    
+    setTrackVolume(trackIndex, value) {
+        const effects = this.trackEffects.get(trackIndex);
+        if (effects) {
+            const gain = value / 100;
+            effects.gain.gain.setTargetAtTime(gain, this.audioContext.currentTime, 0.01);
+        }
+    }
+    
+    setTrackDecay(trackIndex, value) {
+        // Convert 0-100 range to 0.01-2 seconds
+        const sustainTime = 0.01 + (value / 100) * 1.99;
+        this.trackSustainTimes.set(trackIndex, sustainTime);
+    }
+    
+    getTrackSustainTime(trackIndex) {
+        return this.trackSustainTimes.get(trackIndex) || this.sustainTime;
+    }
+    
+    // Timing system methods
+    initializeTimingWorker() {
+        // Create a simple timer using setInterval for now
+        // In production, you'd want to use a Web Worker for better timing
+        this.scheduler = null;
+    }
+    
+    setBPM(bpm) {
+        this.bpm = bpm;
+        this.secondsPerBeat = 60.0 / this.bpm;
+    }
+    
+    setTimeSignature(numerator, denominator) {
+        this.timeSignature = { numerator, denominator };
+    }
+    
+    async startSequencer() {
+        if (this.isPlaying) return;
+        
+        // Resume audio context if needed
+        if (this.audioContext.state === 'suspended') {
+            await this.audioContext.resume();
+        }
+        
+        console.log('Audio context state:', this.audioContext.state, 'currentTime:', this.audioContext.currentTime);
+        
+        this.isPlaying = true;
+        this.currentBeat = 0;
+        
+        // Force nextNoteTime to a proper value
+        const currentTime = this.audioContext.currentTime;
+        this.nextNoteTime = currentTime + 0.05; // Start 50ms in the future
+        
+        console.log('Sequencer starting - currentTime:', currentTime, 'nextNoteTime:', this.nextNoteTime);
+        
+        this.scheduler = setInterval(() => this.schedule(), this.lookahead);
+        console.log('Sequencer started, BPM:', this.bpm);
+    }
+    
+    stopSequencer() {
+        this.isPlaying = false;
+        if (this.scheduler) {
+            clearInterval(this.scheduler);
+            this.scheduler = null;
+        }
+        // Clear scheduled notes cache
+        this.scheduledNotes.clear();
+    }
+    
+    schedule() {
+        // Schedule all notes that need to play before the next interval
+        const currentTime = this.audioContext.currentTime;
+        const scheduleUntil = currentTime + this.scheduleAheadTime;
+        
+        // Debug timing only occasionally
+        if (this.currentBeat === 0 && Math.random() < 0.1) {
+            console.log(`Schedule: currentTime=${currentTime.toFixed(3)}, nextNoteTime=${this.nextNoteTime.toFixed(3)}`);
+        }
+        
+        // Prevent infinite loop
+        let safetyCounter = 0;
+        while (this.nextNoteTime < scheduleUntil && safetyCounter < 5) {
+            // Don't schedule notes in the past
+            if (this.nextNoteTime < currentTime) {
+                console.log(`Skipping note in the past: nextNoteTime=${this.nextNoteTime.toFixed(3)}, currentTime=${currentTime.toFixed(3)}`);
+                this.nextBeat();
+                safetyCounter++;
+                continue;
+            }
+            
+            if (this.currentBeat === 0) {
+                console.log(`Entering while loop iteration ${safetyCounter}: beat ${this.currentBeat}, nextNoteTime ${this.nextNoteTime.toFixed(3)}`);
+            }
+            
+            try {
+                this.scheduleNote(this.currentBeat, this.nextNoteTime);
+                const oldNextNoteTime = this.nextNoteTime;
+                this.nextBeat();
+                safetyCounter++;
+                
+                // Debug if nextNoteTime doesn't advance
+                if (this.nextNoteTime === oldNextNoteTime) {
+                    console.error('nextNoteTime not advancing!', oldNextNoteTime);
+                    break;
+                }
+            } catch (error) {
+                console.error('Error in while loop:', error);
+                break;
+            }
+        }
+        
+        if (safetyCounter >= 5) {
+            console.warn('Schedule safety counter hit, preventing infinite loop');
+        }
+    }
+    
+    scheduleNote(beatNumber, time) {
+        // Play metronome if enabled
+        if (this.metronomeEnabled) {
+            this.playMetronomeClick(beatNumber, time);
+        }
+        
+        // Play recorded loop notes
+        if (this.loopRecording && this.recordedNotes.length > 0) {
+            this.playLoopedNotes(beatNumber, time);
+        }
+        
+        // Play sequencer notes - handle different resolutions per track
+        this.sequencerData.forEach((trackData, trackIndex) => {
+            if (trackData && beatNumber >= 0) {
+                const resolution = trackData.resolution || 'quarter';
+                const quarterNoteDuration = 60.0 / this.bpm;
+                
+                // For different resolutions, check multiple subdivisions within this quarter note beat
+                if (resolution === 'quarter') {
+                    // Simple case - just check the beat
+                    if (trackData.beats && trackData.beats[beatNumber]) {
+                        this.playSimpleSequencedNote(trackIndex, time);
+                    }
+                } else if (resolution === 'eighth') {
+                    // Play 2 eighth notes within this quarter note beat
+                    const eighthBeat1 = beatNumber * 2;
+                    const eighthBeat2 = beatNumber * 2 + 1;
+                    
+                    if (trackData.beats && eighthBeat1 < trackData.beats.length && trackData.beats[eighthBeat1]) {
+                        this.playSimpleSequencedNote(trackIndex, time);
+                    }
+                    if (trackData.beats && eighthBeat2 < trackData.beats.length && trackData.beats[eighthBeat2]) {
+                        this.playSimpleSequencedNote(trackIndex, time + quarterNoteDuration / 2);
+                    }
+                } else if (resolution === 'sixteenth') {
+                    // Play 4 sixteenth notes within this quarter note beat
+                    for (let i = 0; i < 4; i++) {
+                        const sixteenthBeat = beatNumber * 4 + i;
+                        if (trackData.beats && sixteenthBeat < trackData.beats.length && trackData.beats[sixteenthBeat]) {
+                            this.playSimpleSequencedNote(trackIndex, time + quarterNoteDuration * i / 4);
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    playLoopedNotes(beatNumber, time) {
+        // Calculate the time offset for this beat in the loop
+        const beatTime = (beatNumber / 16) * (this.loopLength * this.secondsPerBeat);
+        
+        // Find notes that should play at this beat
+        this.recordedNotes.forEach(note => {
+            // Wrap note time to loop length
+            const noteLoopTime = note.time % (this.loopLength * this.secondsPerBeat);
+            const beatStartTime = beatTime;
+            const beatEndTime = beatTime + (this.secondsPerBeat * 0.25); // 16th note duration
+            
+            // Check if note falls within this beat's time window
+            if (noteLoopTime >= beatStartTime && noteLoopTime < beatEndTime) {
+                // Schedule the note
+                const noteOffset = noteLoopTime - beatStartTime;
+                this.playLoopedNote(note, time + noteOffset);
+            }
+        });
+    }
+    
+    playLoopedNote(note, time) {
+        const voice = {
+            oscillators: [],
+            gain: this.audioContext.createGain(),
+            touchId: `loop_${time}`,
+            instrument: note.instrument,
+            trackIndex: note.trackIndex
+        };
+        
+        // Create the appropriate instrument voice
+        switch (note.instrument) {
+            case 'synth':
+                this.createSynthVoice(voice, note.frequency);
+                break;
+            case 'piano':
+                this.createPianoVoice(voice, note.frequency);
+                break;
+            case 'strings':
+                this.createStringsVoice(voice, note.frequency);
+                break;
+            case 'bells':
+                this.createBellsVoice(voice, note.frequency);
+                break;
+            case 'bass':
+                this.createBassVoice(voice, note.frequency);
+                break;
+            case 'lead':
+                this.createLeadVoice(voice, note.frequency);
+                break;
+            case 'pad':
+                this.createPadVoice(voice, note.frequency);
+                break;
+            case 'pluck':
+                this.createPluckVoice(voice, note.frequency);
+                break;
+            case 'organ':
+                this.createOrganVoice(voice, note.frequency);
+                break;
+            case 'flute':
+                this.createFluteVoice(voice, note.frequency);
+                break;
+            case 'brass':
+                this.createBrassVoice(voice, note.frequency);
+                break;
+            case 'choir':
+                this.createChoirVoice(voice, note.frequency);
+                break;
+        }
+        
+        // Connect and schedule
+        const trackEffects = this.getTrackEffects(note.trackIndex);
+        if (trackEffects) {
+            voice.gain.connect(trackEffects.filter);
+        } else {
+            voice.gain.connect(this.filter);
+        }
+        
+        // Schedule start
+        voice.oscillators.forEach(osc => {
+            osc.start(time);
+        });
+        
+        // Schedule stop
+        const sustainTime = this.getTrackSustainTime(note.trackIndex);
+        voice.gain.gain.setValueAtTime(0.5, time);
+        voice.gain.gain.exponentialRampToValueAtTime(0.001, time + sustainTime);
+        
+        setTimeout(() => {
+            voice.oscillators.forEach(osc => {
+                try {
+                    osc.stop();
+                    osc.disconnect();
+                } catch (e) {
+                    // Already stopped
+                }
+            });
+            try {
+                voice.gain.disconnect();
+            } catch (e) {
+                // Already disconnected
+            }
+        }, (sustainTime + 0.1) * 1000);
+    }
+    
+    nextBeat() {
+        const secondsPerBeat = 60.0 / this.bpm;
+        this.nextNoteTime += secondsPerBeat; // Quarter notes for grid view
+        
+        this.currentBeat++;
+        if (this.currentBeat === 16) { // 16 quarter note beats (4 bars of 4)
+            this.currentBeat = 0;
+        }
+        
+        // Log only on important beats
+        if (this.currentBeat % 4 === 0) {
+            console.log(`Beat: ${this.currentBeat}, nextNoteTime: ${this.nextNoteTime.toFixed(3)}`);
+        }
+    }
+    
+    playMetronomeClick(beatNumber, time) {
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        
+        // Different pitch for downbeat
+        if (beatNumber % 4 === 0) {
+            osc.frequency.value = 1000;
+            gain.gain.value = 0.3;
+        } else {
+            osc.frequency.value = 800;
+            gain.gain.value = 0.15;
+        }
+        
+        osc.start(time);
+        osc.stop(time + 0.05);
+    }
+    
+    playSimpleSequencedNote(trackIndex, time) {
+        const noteKey = `${trackIndex}_${this.currentBeat}_${time.toFixed(3)}`;
+        
+        // Check if we already scheduled this exact note
+        if (this.scheduledNotes.has(noteKey)) {
+            return; // Skip duplicate
+        }
+        
+        this.scheduledNotes.add(noteKey);
+        
+        try {
+            // Create a simple oscillator directly - much simpler than the complex voice system
+            const osc = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+            
+            // Set frequency based on track (different pitch per track)
+            const frequencies = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25]; // C4 to C5
+            osc.frequency.setValueAtTime(frequencies[trackIndex % 8], time);
+            
+            // Set wave type based on track instrument
+            const instrument = this.getTrackInstrument(trackIndex);
+            switch (instrument) {
+                case 'bass': osc.type = 'sawtooth'; break;
+                case 'lead': osc.type = 'square'; break;
+                case 'pad': osc.type = 'triangle'; break;
+                default: osc.type = 'sine'; break;
+            }
+            
+            // Set volume envelope
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(0.3, time + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+            
+            // Connect and play
+            osc.connect(gain);
+            gain.connect(this.masterGain);
+            
+            osc.start(time);
+            osc.stop(time + 0.2);
+            
+            console.log(`Playing simple note: track ${trackIndex}, beat ${this.currentBeat}, time ${time.toFixed(3)}`);
+            
+        } catch (error) {
+            console.error('Error playing simple note:', error);
+        }
+    }
+
+    playSequencedNoteWithFreq(trackIndex, instrument, frequency, time) {
+        const noteKey = `${trackIndex}_${this.currentBeat}_${time.toFixed(3)}`;
+        
+        // Check if we already scheduled this exact note
+        if (this.scheduledNotes.has(noteKey)) {
+            return; // Skip duplicate
+        }
+        
+        this.scheduledNotes.add(noteKey);
+        
+        // Clean up old scheduled notes (keep only recent ones)
+        if (this.scheduledNotes.size > 100) {
+            const oldNotes = Array.from(this.scheduledNotes).slice(0, 50);
+            oldNotes.forEach(note => this.scheduledNotes.delete(note));
+        }
+        
+        const noteId = `seq_${trackIndex}_${time.toFixed(3)}_${Math.random()}`;
+        
+        const voice = {
+            oscillators: [],
+            gain: this.audioContext.createGain(),
+            touchId: noteId,
+            instrument: instrument,
+            trackIndex: trackIndex
+        };
+        
+        this.createInstrumentVoice(voice, instrument, frequency);
+        this.scheduleVoicePlayback(voice, trackIndex, time);
+    }
+    
+    playSequencedNote(trackIndex, instrument, time) {
+        // Play a C4 note for sequenced notes
+        const frequency = 261.63;
+        const noteId = `seq_${trackIndex}_${time}`;
+        
+        const voice = {
+            oscillators: [],
+            gain: this.audioContext.createGain(),
+            touchId: noteId,
+            instrument: instrument,
+            trackIndex: trackIndex
+        };
+        
+        // Create the appropriate instrument voice
+        switch (instrument) {
+            case 'synth':
+                this.createSynthVoice(voice, frequency);
+                break;
+            case 'piano':
+                this.createPianoVoice(voice, frequency);
+                break;
+            case 'strings':
+                this.createStringsVoice(voice, frequency);
+                break;
+            case 'bells':
+                this.createBellsVoice(voice, frequency);
+                break;
+            case 'bass':
+                this.createBassVoice(voice, frequency);
+                break;
+            case 'lead':
+                this.createLeadVoice(voice, frequency);
+                break;
+            case 'pad':
+                this.createPadVoice(voice, frequency);
+                break;
+            case 'pluck':
+                this.createPluckVoice(voice, frequency);
+                break;
+            case 'organ':
+                this.createOrganVoice(voice, frequency);
+                break;
+            case 'flute':
+                this.createFluteVoice(voice, frequency);
+                break;
+            case 'brass':
+                this.createBrassVoice(voice, frequency);
+                break;
+            case 'choir':
+                this.createChoirVoice(voice, frequency);
+                break;
+        }
+        
+        // Connect voice to track effects
+        const trackEffects = this.getTrackEffects(trackIndex);
+        if (trackEffects) {
+            voice.gain.connect(trackEffects.filter);
+        } else {
+            voice.gain.connect(this.filter);
+        }
+        
+        // Schedule start and stop
+        voice.oscillators.forEach(osc => {
+            osc.start(time);
+        });
+        
+        const sustainTime = this.getTrackSustainTime(trackIndex);
+        voice.gain.gain.setValueAtTime(0.5, time);
+        voice.gain.gain.exponentialRampToValueAtTime(0.001, time + sustainTime);
+        
+        setTimeout(() => {
+            voice.oscillators.forEach(osc => {
+                try {
+                    osc.stop();
+                    osc.disconnect();
+                } catch (e) {
+                    // Already stopped
+                }
+            });
+            try {
+                voice.gain.disconnect();
+            } catch (e) {
+                // Already disconnected
+            }
+        }, (sustainTime + 0.1) * 1000);
+    }
+    
+    playSequencedSample(trackIndex, time) {
+        const sample = this.samples.get(trackIndex);
+        if (!sample || !sample.buffer) return;
+        
+        const source = this.audioContext.createBufferSource();
+        const gain = this.audioContext.createGain();
+        
+        source.buffer = sample.buffer;
+        source.connect(gain);
+        
+        const trackEffects = this.getTrackEffects(trackIndex);
+        if (trackEffects) {
+            gain.connect(trackEffects.filter);
+        } else {
+            gain.connect(this.masterGain);
+        }
+        
+        gain.gain.setValueAtTime(0.7, time);
+        source.start(time);
+    }
+    
+    setMetronomeEnabled(enabled) {
+        this.metronomeEnabled = enabled;
+    }
+    
+    // Initialize sequencer data for all tracks
+    initializeSequencerData() {
+        for (let i = 0; i < 8; i++) {
+            // Initialize with both beat array (for grid view) and note data (for piano roll)
+            this.sequencerData.set(i, {
+                beats: new Array(64).fill(false), // Max resolution (16th notes = 64 beats)
+                resolution: 'quarter', // Default resolution
+                notes: [] // Piano roll data
+            });
+            
+            // Initialize piano roll note data (24 notes x 32 beats)
+            const noteData = [];
+            for (let note = 0; note < 24; note++) {
+                noteData.push(new Array(32).fill(false));
+            }
+            this.sequencerData.get(i).notes = noteData;
+        }
+    }
+    
+    // Set a note in the sequencer (updated for piano roll)
+    setSequencerNote(trackIndex, noteIndex, beatIndex, active) {
+        const trackData = this.sequencerData.get(trackIndex);
+        if (trackData && trackData.notes && trackData.notes[noteIndex]) {
+            trackData.notes[noteIndex][beatIndex] = active;
+        }
+    }
+    
+    // Set a beat in the sequencer (for grid view)
+    setSequencerBeat(trackIndex, beatIndex, active, resolution = 'quarter') {
+        const trackData = this.sequencerData.get(trackIndex);
+        if (trackData && trackData.beats && beatIndex >= 0 && beatIndex < 64) {
+            trackData.beats[beatIndex] = active;
+            trackData.resolution = resolution;
+        }
+    }
+    
+    // Initialize track instruments
+    initializeTrackInstruments() {
+        // Default instruments for each track
+        const defaults = ['synth', 'piano', 'strings', 'bells', 'pad', 'lead', 'pluck', 'bass'];
+        for (let i = 0; i < 8; i++) {
+            this.trackInstruments.set(i, defaults[i]);
+        }
+    }
+    
+    // Set track instrument
+    setTrackInstrument(trackIndex, instrument) {
+        this.trackInstruments.set(trackIndex, instrument);
+    }
+    
+    // Get track instrument
+    getTrackInstrument(trackIndex) {
+        return this.trackInstruments.get(trackIndex) || 'synth';
+    }
+    
+    createInstrumentVoice(voice, instrument, frequency) {
+        switch (instrument) {
+            case 'synth':
+                this.createSynthVoice(voice, frequency);
+                break;
+            case 'piano':
+                this.createPianoVoice(voice, frequency);
+                break;
+            case 'strings':
+                this.createStringsVoice(voice, frequency);
+                break;
+            case 'bells':
+                this.createBellsVoice(voice, frequency);
+                break;
+            case 'bass':
+                this.createBassVoice(voice, frequency);
+                break;
+            case 'lead':
+                this.createLeadVoice(voice, frequency);
+                break;
+            case 'pad':
+                this.createPadVoice(voice, frequency);
+                break;
+            case 'pluck':
+                this.createPluckVoice(voice, frequency);
+                break;
+            case 'organ':
+                this.createOrganVoice(voice, frequency);
+                break;
+            case 'flute':
+                this.createFluteVoice(voice, frequency);
+                break;
+            case 'brass':
+                this.createBrassVoice(voice, frequency);
+                break;
+            case 'choir':
+                this.createChoirVoice(voice, frequency);
+                break;
+        }
+    }
+    
+    scheduleVoicePlayback(voice, trackIndex, time) {
+        // Connect voice to track effects
+        const trackEffects = this.getTrackEffects(trackIndex);
+        if (trackEffects) {
+            voice.gain.connect(trackEffects.filter);
+        } else {
+            voice.gain.connect(this.filter);
+        }
+        
+        // Schedule start and stop
+        voice.oscillators.forEach(osc => {
+            osc.start(time);
+        });
+        
+        const sustainTime = this.getTrackSustainTime(trackIndex);
+        voice.gain.gain.setValueAtTime(0.5, time);
+        voice.gain.gain.exponentialRampToValueAtTime(0.001, time + sustainTime);
+        
+        setTimeout(() => {
+            voice.oscillators.forEach(osc => {
+                try {
+                    osc.stop();
+                    osc.disconnect();
+                } catch (e) {
+                    // Already stopped
+                }
+            });
+            try {
+                voice.gain.disconnect();
+            } catch (e) {
+                // Already disconnected
+            }
+        }, (sustainTime + 0.1) * 1000);
     }
 }

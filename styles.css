@@ -7,6 +7,130 @@
     user-select: none;
 }
 
+/* Track Controls Section */
+.track-controls {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 400px;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    border-right: 2px solid rgba(0, 255, 255, 0.3);
+    z-index: 10;
+    overflow-y: auto;
+}
+
+.track-control-row {
+    height: calc((100vh - 60px) / 8); /* Account for header and divide by 8 tracks */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    gap: 8px;
+    position: relative;
+}
+
+.track-control-row:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.controls-header {
+    height: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    background: rgba(0, 255, 255, 0.1);
+    border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+}
+
+.controls-header h3 {
+    color: #00ffff;
+    margin: 0;
+    text-shadow: 0 0 10px #00ffff;
+}
+
+#minimize-controls {
+    background: rgba(255, 165, 0, 0.3);
+    border: 1px solid rgba(255, 165, 0, 0.6);
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+#minimize-controls:hover {
+    background: rgba(255, 165, 0, 0.5);
+    transform: scale(1.1);
+}
+
+/* Minimized Controls Bar */
+.minimized-controls {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 60px;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    border-right: 2px solid rgba(0, 255, 255, 0.3);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 5px;
+    gap: 10px;
+}
+
+#restore-controls {
+    background: rgba(0, 255, 255, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.6);
+    color: #fff;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+#restore-controls:hover {
+    background: rgba(0, 255, 255, 0.5);
+    transform: scale(1.1);
+}
+
+.mini-track-indicators {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 20px;
+}
+
+.mini-track {
+    width: 50px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Track Controls States */
+.track-controls.minimized {
+    transform: translateX(-400px);
+    transition: transform 0.3s ease;
+}
+
+.minimized-controls.active {
+    display: flex;
+}
+
 body {
     background: #000;
     color: #fff;
@@ -27,30 +151,93 @@ body {
     z-index: 1;
 }
 
-/* Instrument zones */
-.instrument-zones {
+/* Top Menu Bar */
+.top-menu {
     position: fixed;
     top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    left: 400px; /* Start after controls section */
+    width: calc(100% - 400px);
+    height: 60px; /* Same height as controls header */
+    background: rgba(0, 255, 255, 0.1);
+    border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 20px;
+    transition: left 0.3s ease, width 0.3s ease;
+}
+
+.top-menu.fullscreen {
+    left: 60px; /* Start after minimized controls */
+    width: calc(100% - 60px);
+}
+
+.menu-item {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.menu-item:hover {
+    background: rgba(0, 255, 255, 0.3);
+    border-color: rgba(0, 255, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+.menu-item.active {
+    background: rgba(0, 255, 255, 0.5);
+    border-color: rgba(0, 255, 255, 0.8);
+}
+
+/* Playing Area (Instrument zones) */
+.instrument-zones {
+    position: fixed;
+    top: 60px; /* Start below top menu */
+    left: 400px; /* Start after controls section */
+    width: calc(100% - 400px);
+    height: calc(100% - 60px); /* Account for top menu */
     z-index: 2;
     pointer-events: none;
+    transition: left 0.3s ease, width 0.3s ease;
+}
+
+.instrument-zones.fullscreen {
+    left: 60px; /* Start after minimized controls */
+    width: calc(100% - 60px);
 }
 
 .instrument-zone {
     position: absolute;
     left: 0;
     width: 100%;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    height: calc((100vh - 60px) / 8); /* Match track control row height */
     display: flex;
     align-items: center;
     pointer-events: none;
 }
 
+/* Set specific positions for each track */
+.instrument-zone[data-track="0"] { top: 0; }
+.instrument-zone[data-track="1"] { top: calc((100vh - 60px) / 8 * 1); }
+.instrument-zone[data-track="2"] { top: calc((100vh - 60px) / 8 * 2); }
+.instrument-zone[data-track="3"] { top: calc((100vh - 60px) / 8 * 3); }
+.instrument-zone[data-track="4"] { top: calc((100vh - 60px) / 8 * 4); }
+.instrument-zone[data-track="5"] { top: calc((100vh - 60px) / 8 * 5); }
+.instrument-zone[data-track="6"] { top: calc((100vh - 60px) / 8 * 6); }
+.instrument-zone[data-track="7"] { top: calc((100vh - 60px) / 8 * 7); }
+
 .zone-label {
     position: absolute;
-    left: 100px;
+    left: 200px; /* Move further right to make room for sound gen button */
+    top: 50%;
+    transform: translateY(-50%);
     font-size: 14px;
     font-weight: bold;
     color: rgba(255, 255, 255, 0.3);
@@ -59,19 +246,18 @@ body {
 }
 
 .track-selector {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
+    flex: 0 1 auto;
+    min-width: 120px;
+    max-width: 150px;
     background: rgba(0, 0, 0, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.3);
     color: #fff;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 12px;
-    z-index: 3;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
     cursor: pointer;
     outline: none;
+    pointer-events: all;
 }
 
 .track-selector:hover {
@@ -313,14 +499,189 @@ body {
     color: #888;
 }
 
+/* Grid Sequencer View */
+.grid-sequencer {
+    position: fixed;
+    top: 60px;
+    left: 400px;
+    width: calc(100% - 400px);
+    height: calc(100% - 60px);
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 2;
+    display: none;
+    transition: left 0.3s ease, width 0.3s ease;
+}
+
+.grid-sequencer.fullscreen {
+    left: 60px;
+    width: calc(100% - 60px);
+}
+
+.sequencer-controls {
+    display: flex;
+    gap: 10px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sequencer-controls button {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.sequencer-controls button:hover {
+    background: rgba(0, 255, 255, 0.3);
+}
+
+.sequencer-grid {
+    padding: 20px;
+    height: calc(100% - 70px);
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+.track-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+    min-width: fit-content;
+}
+
+.track-label {
+    width: 120px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #00ffff;
+    text-align: right;
+    padding-right: 10px;
+}
+
+.beat-slots {
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+}
+
+.beat-slot {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.beat-slot:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.beat-slot.active {
+    background: rgba(0, 255, 255, 0.5);
+    border-color: rgba(0, 255, 255, 0.8);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.beat-slot.playing {
+    background: rgba(255, 255, 0, 0.6);
+    border-color: rgba(255, 255, 0, 0.9);
+    box-shadow: 0 0 20px rgba(255, 255, 0, 0.7);
+    transform: scale(1.2);
+}
+
+.beat-slot.bar-start {
+    border-left: 3px solid rgba(255, 165, 0, 0.8);
+    margin-left: 8px;
+}
+
+.beat-slot.quarter-note {
+    width: 80px;
+    height: 40px;
+}
+
+.beat-slot.eighth-note {
+    width: 40px;
+    height: 40px;
+}
+
+.beat-slot.sixteenth-note {
+    width: 20px;
+    height: 40px;
+}
+
+.track-resolution {
+    width: 60px;
+    padding: 4px;
+    margin-right: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+/* Single Track View */
+.single-track-view {
+    position: fixed;
+    top: 60px;
+    left: 400px;
+    width: calc(100% - 400px);
+    height: calc(100% - 60px);
+    background: #000;
+    z-index: 2;
+    display: none;
+    transition: left 0.3s ease, width 0.3s ease;
+}
+
+.single-track-view.fullscreen {
+    left: 60px;
+    width: calc(100% - 60px);
+}
+
+.single-track-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+}
+
+.single-track-header h3 {
+    color: #00ffff;
+    margin: 0;
+}
+
+#single-track-select {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+#singleTrackCanvas {
+    width: 100%;
+    height: calc(100% - 60px);
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateX(20px);
+        transform: translateY(-10px);
     }
     to {
         opacity: 1;
-        transform: translateX(0);
+        transform: translateY(0);
     }
 }
 
@@ -445,6 +806,51 @@ body {
     }
 }
 
+/* Metronome button */
+.metro-btn {
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.metro-btn.active {
+    background: rgba(0, 255, 0, 0.3);
+    border-color: rgba(0, 255, 0, 0.6);
+    color: #0f0;
+}
+
+.metro-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Loop button */
+.loop-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.loop-btn.active {
+    background: rgba(255, 165, 0, 0.3);
+    border-color: rgba(255, 165, 0, 0.6);
+    color: #ffa500;
+}
+
+.loop-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+
 /* Prevent iOS bounce */
 html, body {
     position: fixed;
@@ -468,7 +874,7 @@ button, select, input {
 .debug-panel {
     position: fixed;
     bottom: 20px;
-    left: 20px;
+    right: 20px; /* Move to right side */
     width: 300px;
     max-height: 200px;
     background: rgba(0, 0, 0, 0.9);
@@ -542,22 +948,18 @@ button, select, input {
 
 /* Sound Generation UI */
 .sound-gen-btn {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
     background: rgba(148, 0, 211, 0.3);
     border: 1px solid rgba(148, 0, 211, 0.6);
     color: #fff;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     font-size: 16px;
     cursor: pointer;
-    z-index: 3;
     transition: all 0.3s;
     outline: none;
     pointer-events: all;
+    flex-shrink: 0;
 }
 
 .sound-gen-btn:hover {
@@ -754,4 +1156,181 @@ button, select, input {
 /* Track selector pointer events fix */
 .track-selector {
     pointer-events: all;
+}
+
+/* Effects Toggle Button */
+.effects-toggle-btn {
+    background: rgba(255, 165, 0, 0.3);
+    border: 1px solid rgba(255, 165, 0, 0.6);
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    outline: none;
+    pointer-events: all;
+    flex-shrink: 0;
+}
+
+.effects-toggle-btn:hover {
+    background: rgba(255, 165, 0, 0.5);
+    border-color: rgba(255, 165, 0, 0.8);
+    box-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
+}
+
+.effects-toggle-btn.active {
+    background: rgba(255, 165, 0, 0.7);
+    border-color: rgba(255, 165, 0, 1);
+}
+
+/* Track Effects Panel */
+.track-effects-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid rgba(255, 165, 0, 0.7);
+    border-radius: 15px;
+    padding: 15px;
+    display: none; /* Hidden by default */
+    flex-direction: row;
+    gap: 20px;
+    z-index: 200;
+    pointer-events: all;
+    min-width: 400px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+}
+
+.track-effects-panel.active {
+    display: flex;
+}
+
+.track-effects-panel .effect-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-width: 80px;
+}
+
+.track-effects-panel .effect-control label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: bold;
+    white-space: nowrap;
+    text-shadow: 0 0 5px rgba(255, 165, 0, 0.5);
+}
+
+.track-effects-panel .effect-control input[type="range"] {
+    width: 80px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.track-effects-panel .effect-control input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(45deg, #ff6600, #ff9900);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    border: 2px solid #fff;
+}
+
+.track-effects-panel .effect-control input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(45deg, #ff6600, #ff9900);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.track-effects-panel .effect-control input[type="range"]::-webkit-slider-track {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    height: 8px;
+}
+
+.track-effects-panel .effect-control input[type="range"]::-moz-range-track {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    height: 8px;
+    border: none;
+}
+
+.track-effects-panel .effect-control .effect-value {
+    font-size: 11px;
+    color: rgba(255, 165, 0, 0.9);
+    font-weight: bold;
+    background: rgba(255, 165, 0, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 165, 0, 0.3);
+    min-width: 25px;
+    text-align: center;
+}
+
+
+/* Track selection highlighting */
+.track-control-row.selected {
+    background: rgba(0, 255, 0, 0.2) !important;
+    border: 1px solid rgba(0, 255, 0, 0.5);
+}
+
+/* Multi-track view */
+.multi-track-view {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: block;
+}
+
+.track-label {
+    font-size: 18px;
+    font-weight: bold;
+    color: #0f0;
+}
+
+.gesture-info {
+    font-size: 12px;
+    color: #888;
+}
+
+#singleTrackCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+}
+
+.effect-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.effect-indicator {
+    font-size: 24px;
+    font-weight: bold;
+    color: #0f0;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.5s;
 }

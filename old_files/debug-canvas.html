@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Canvas Debug</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #222; color: white; font-family: monospace; }
+        #info { margin-bottom: 20px; }
+        #testCanvas { 
+            border: 2px solid red; 
+            background: blue;
+            position: fixed;
+            top: 60px;
+            left: 400px;
+            width: calc(100% - 400px);
+            height: calc(100% - 60px);
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Debug Info:</div>
+    <canvas id="testCanvas"></canvas>
+    
+    <script>
+        const info = document.getElementById('info');
+        const canvas = document.getElementById('testCanvas');
+        const particleCanvas = document.getElementById('particleCanvas');
+        
+        info.innerHTML = `
+            Window: ${window.innerWidth} x ${window.innerHeight}<br>
+            Test Canvas exists: ${canvas ? 'YES' : 'NO'}<br>
+            Test Canvas position: ${canvas ? `${canvas.offsetLeft}, ${canvas.offsetTop}` : 'N/A'}<br>
+            Test Canvas size: ${canvas ? `${canvas.width} x ${canvas.height}` : 'N/A'}<br>
+            ParticleCanvas exists: ${particleCanvas ? 'YES' : 'NO'}<br>
+        `;
+        
+        // Try to find the real canvas in parent
+        if (window.parent && window.parent.document) {
+            const parentCanvas = window.parent.document.getElementById('particleCanvas');
+            info.innerHTML += `<br>Parent Canvas exists: ${parentCanvas ? 'YES' : 'NO'}`;
+            if (parentCanvas) {
+                const rect = parentCanvas.getBoundingClientRect();
+                const computed = window.parent.getComputedStyle(parentCanvas);
+                info.innerHTML += `<br>Parent Canvas rect: ${rect.left}, ${rect.top}, ${rect.width} x ${rect.height}`;
+                info.innerHTML += `<br>Parent Canvas display: ${computed.display}`;
+                info.innerHTML += `<br>Parent Canvas visibility: ${computed.visibility}`;
+                info.innerHTML += `<br>Parent Canvas z-index: ${computed.zIndex}`;
+            }
+        }
+    </script>
+</body>
+</html>

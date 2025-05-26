@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Canvas Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #222; }
+        
+        .left-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 400px;
+            height: 100%;
+            background: #333;
+            border-right: 2px solid #666;
+        }
+        
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 400px;
+            right: 0;
+            height: 60px;
+            background: #444;
+            border-bottom: 2px solid #666;
+        }
+        
+        #testCanvas {
+            position: fixed;
+            top: 60px;
+            left: 400px;
+            width: calc(100% - 400px);
+            height: calc(100% - 60px);
+            background: blue;
+            border: 3px solid red;
+        }
+    </style>
+</head>
+<body>
+    <div class="left-panel">Left Panel (400px)</div>
+    <div class="top-bar">Top Bar (60px)</div>
+    <canvas id="testCanvas"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('testCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas internal size
+        canvas.width = window.innerWidth - 400;
+        canvas.height = window.innerHeight - 60;
+        
+        // Draw something
+        ctx.fillStyle = 'green';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.font = '30px Arial';
+        ctx.fillText('Canvas is working!', 50, 50);
+    </script>
+</body>
+</html>

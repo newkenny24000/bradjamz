@@ -1,147 +1,189 @@
+/* 8-Track Studio Styles */
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
 }
 
-/* Track Controls Section */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #000;
+    color: #fff;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Track Controls */
 .track-controls {
     position: fixed;
-    top: 0;
     left: 0;
-    width: 400px;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.95);
-    border-right: 2px solid rgba(0, 255, 255, 0.3);
-    z-index: 10;
+    top: 50px;
+    width: 300px;
+    background: rgba(0, 0, 0, 0.9);
+    border-right: 1px solid #333;
+    padding: 10px;
+    height: calc(100vh - 50px);
     overflow-y: auto;
-}
-
-.track-control-row {
-    height: calc((100vh - 60px) / 8); /* Account for header and divide by 8 tracks */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-    padding: 5px 10px;
-    gap: 8px;
-    position: relative;
-}
-
-.track-control-row:nth-child(even) {
-    background: rgba(255, 255, 255, 0.02);
+    z-index: 100;
 }
 
 .controls-header {
-    height: 60px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 20px;
-    background: rgba(0, 255, 255, 0.1);
-    border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
 }
 
 .controls-header h3 {
-    color: #00ffff;
-    margin: 0;
-    text-shadow: 0 0 10px #00ffff;
+    font-size: 16px;
+    font-weight: 500;
 }
 
-#minimize-controls {
-    background: rgba(255, 165, 0, 0.3);
-    border: 1px solid rgba(255, 165, 0, 0.6);
+.track-control-row {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 5px;
+}
+
+.track-label {
+    display: inline-block;
+    width: 60px;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.sound-gen-btn, .effects-toggle-btn {
+    background: #333;
+    border: none;
     color: #fff;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    font-size: 18px;
+    padding: 5px 10px;
+    border-radius: 3px;
     cursor: pointer;
-    transition: all 0.3s;
+    margin-left: 5px;
+    font-size: 16px;
 }
 
-#minimize-controls:hover {
-    background: rgba(255, 165, 0, 0.5);
-    transform: scale(1.1);
+.sound-gen-btn:hover, .effects-toggle-btn:hover {
+    background: #444;
 }
 
-/* Minimized Controls Bar */
+.track-effects-panel {
+    display: none;
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 3px;
+}
+
+.effect-control {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.effect-control label {
+    width: 60px;
+    font-size: 12px;
+    color: #aaa;
+}
+
+.effect-control input[type="range"] {
+    flex: 1;
+    margin: 0 10px;
+}
+
+.effect-value {
+    width: 30px;
+    text-align: right;
+    font-size: 12px;
+    color: #888;
+}
+
+/* Minimized Controls */
 .minimized-controls {
     position: fixed;
-    top: 0;
     left: 0;
+    top: 50px;
     width: 60px;
-    height: 100%;
     background: rgba(0, 0, 0, 0.9);
-    border-right: 2px solid rgba(0, 255, 255, 0.3);
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    padding: 10px 5px;
-    gap: 10px;
+    border-right: 1px solid #333;
+    padding: 10px;
+    z-index: 100;
+    display: none;
 }
 
 #restore-controls {
-    background: rgba(0, 255, 255, 0.3);
-    border: 1px solid rgba(0, 255, 255, 0.6);
+    width: 100%;
+    background: #333;
+    border: none;
     color: #fff;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    font-size: 20px;
+    padding: 10px;
+    border-radius: 3px;
     cursor: pointer;
-    transition: all 0.3s;
-}
-
-#restore-controls:hover {
-    background: rgba(0, 255, 255, 0.5);
-    transform: scale(1.1);
+    margin-bottom: 10px;
 }
 
 .mini-track-indicators {
     display: flex;
     flex-direction: column;
     gap: 5px;
-    margin-top: 20px;
 }
 
 .mini-track {
-    width: 50px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
     background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 8px;
+    border-radius: 3px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
-    font-size: 14px;
-    font-weight: bold;
+    font-size: 12px;
+    cursor: pointer;
 }
 
-/* Track Controls States */
-.track-controls.minimized {
-    transform: translateX(-400px);
-    transition: transform 0.3s ease;
+.mini-track.active {
+    background: rgba(255, 255, 255, 0.3);
 }
 
-.minimized-controls.active {
-    display: flex;
-}
-
-body {
-    background: #000;
-    color: #fff;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    overflow: hidden;
+/* Top Menu Bar */
+.top-menu {
     position: fixed;
-    width: 100%;
-    height: 100%;
-    touch-action: none;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: rgba(0, 0, 0, 0.95);
+    border-bottom: 1px solid #333;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 10px;
+    z-index: 200;
 }
 
+.menu-item {
+    background: #222;
+    border: 1px solid #444;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.menu-item:hover {
+    background: #333;
+    border-color: #555;
+}
+
+/* Canvas */
 #particleCanvas {
     position: fixed;
     top: 0;
@@ -151,136 +193,115 @@ body {
     z-index: 1;
 }
 
-/* Top Menu Bar */
-.top-menu {
+/* Multi-track View */
+.multi-track-view {
     position: fixed;
-    top: 0;
-    left: 400px; /* Start after controls section */
-    width: calc(100% - 400px);
-    height: 60px; /* Same height as controls header */
-    background: rgba(0, 255, 255, 0.1);
-    border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+    top: 50px;
+    left: 300px;
+    right: 0;
+    bottom: 150px;
     z-index: 10;
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    gap: 20px;
-    transition: left 0.3s ease, width 0.3s ease;
 }
 
-.top-menu.fullscreen {
-    left: 60px; /* Start after minimized controls */
-    width: calc(100% - 60px);
-}
-
-.menu-item {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #fff;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s;
-    font-size: 14px;
-    font-weight: bold;
-}
-
-.menu-item:hover {
-    background: rgba(0, 255, 255, 0.3);
-    border-color: rgba(0, 255, 255, 0.5);
-    transform: translateY(-2px);
-}
-
-.menu-item.active {
-    background: rgba(0, 255, 255, 0.5);
-    border-color: rgba(0, 255, 255, 0.8);
-}
-
-/* Playing Area (Instrument zones) */
 .instrument-zones {
-    position: fixed;
-    top: 60px; /* Start below top menu */
-    left: 400px; /* Start after controls section */
-    width: calc(100% - 400px);
-    height: calc(100% - 60px); /* Account for top menu */
-    z-index: 2;
-    pointer-events: none;
-    transition: left 0.3s ease, width 0.3s ease;
-}
-
-.instrument-zones.fullscreen {
-    left: 60px; /* Start after minimized controls */
-    width: calc(100% - 60px);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .instrument-zone {
+    flex: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    cursor: crosshair;
+    background-image: 
+        /* Center line for original pitch */
+        linear-gradient(to right, transparent 49%, rgba(0,255,0,0.4) 49%, rgba(0,255,0,0.4) 51%, transparent 51%),
+        /* Regular grid lines */
+        linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
+        linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 100% 100%, 12.5% 100%, 6.25% 100%;
+    background-position: 0 0, 0 0, 0 0;
+}
+
+.instrument-zone:last-child {
+    border-bottom: none;
+}
+
+.instrument-zone::before {
+    content: "Track " attr(data-track);
     position: absolute;
-    left: 0;
-    width: 100%;
-    height: calc((100vh - 60px) / 8); /* Match track control row height */
-    display: flex;
-    align-items: center;
+    top: 5px;
+    left: 5px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(0, 0, 0, 0.5);
+    padding: 2px 6px;
+    border-radius: 3px;
     pointer-events: none;
 }
 
-/* Set specific positions for each track */
-.instrument-zone[data-track="0"] { top: 0; }
-.instrument-zone[data-track="1"] { top: calc((100vh - 60px) / 8 * 1); }
-.instrument-zone[data-track="2"] { top: calc((100vh - 60px) / 8 * 2); }
-.instrument-zone[data-track="3"] { top: calc((100vh - 60px) / 8 * 3); }
-.instrument-zone[data-track="4"] { top: calc((100vh - 60px) / 8 * 4); }
-.instrument-zone[data-track="5"] { top: calc((100vh - 60px) / 8 * 5); }
-.instrument-zone[data-track="6"] { top: calc((100vh - 60px) / 8 * 6); }
-.instrument-zone[data-track="7"] { top: calc((100vh - 60px) / 8 * 7); }
-
-.zone-label {
+.instrument-zone::after {
+    content: "";
     position: absolute;
-    left: 200px; /* Move further right to make room for sound gen button */
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 14px;
-    font-weight: bold;
-    color: rgba(255, 255, 255, 0.3);
-    letter-spacing: 2px;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to right, 
+        transparent 0%, 
+        rgba(255,255,255,0.02) 12.5%, 
+        transparent 12.5%,
+        transparent 25%, 
+        rgba(255,255,255,0.02) 37.5%, 
+        transparent 37.5%,
+        transparent 50%, 
+        rgba(255,255,255,0.02) 62.5%, 
+        transparent 62.5%,
+        transparent 75%, 
+        rgba(255,255,255,0.02) 87.5%, 
+        transparent 87.5%
+    );
+    pointer-events: none;
 }
 
-.track-selector {
-    flex: 0 1 auto;
-    min-width: 120px;
-    max-width: 150px;
-    background: rgba(0, 0, 0, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #fff;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 13px;
-    cursor: pointer;
-    outline: none;
-    pointer-events: all;
+/* Piano Roll View */
+.piano-roll {
+    position: fixed;
+    top: 50px;
+    left: 300px;
+    right: 0;
+    bottom: 150px;
+    background: #111;
+    display: none;
+    z-index: 10;
 }
 
-.track-selector:hover {
-    background: rgba(0, 0, 0, 0.9);
-    border-color: rgba(255, 255, 255, 0.5);
+.piano-roll-header {
+    background: #222;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #333;
 }
 
-.track-selector option {
-    background: #000;
-    color: #fff;
+#pianoRollCanvas {
+    width: 100%;
+    height: calc(100% - 50px);
+    background: #1a1a1a;
 }
 
-/* Control panel */
+/* Control Panel */
 .control-panel {
     position: fixed;
     bottom: 0;
-    left: 0;
+    left: 300px;
     right: 0;
     background: rgba(0, 0, 0, 0.95);
-    backdrop-filter: blur(20px);
-    border-top: 2px solid rgba(255, 255, 255, 0.2);
-    z-index: 10;
-    transition: transform 0.3s ease;
+    border-top: 1px solid #333;
+    z-index: 50;
 }
 
 .panel-header {
@@ -288,129 +309,44 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 10px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.panel-header h3 {
-    margin: 0;
-    font-size: 16px;
-    color: #00ffff;
-    text-shadow: 0 0 10px #00ffff;
-}
-
-#collapse-btn {
-    background: none;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #fff;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    font-size: 20px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-#collapse-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: #111;
+    border-bottom: 1px solid #333;
 }
 
 .panel-content {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    padding: 15px;
+    padding: 20px;
 }
 
 .controls-row {
     display: flex;
     gap: 20px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
 }
 
 .control-item {
-    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     gap: 5px;
 }
 
 .control-item label {
-    font-size: 11px;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    font-size: 12px;
+    color: #aaa;
 }
 
-.control-item select {
-    padding: 6px 10px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
+.control-item select,
+.control-item input[type="range"] {
+    background: #222;
+    border: 1px solid #444;
     color: #fff;
-    font-size: 13px;
-    outline: none;
+    padding: 5px;
+    border-radius: 3px;
+    min-width: 100px;
 }
 
 .control-item input[type="range"] {
-    width: 80px;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 2px;
-    outline: none;
-    -webkit-appearance: none;
-}
-
-.control-item input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
-    background: #fff;
-    border-radius: 50%;
-    cursor: pointer;
-}
-
-#octaveValue, #decayValue {
-    color: #00ffff;
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.effects-row {
-    display: flex;
-    gap: 25px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.effect-control {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-}
-
-.effect-control label {
-    font-size: 11px;
-    color: #888;
-}
-
-.effect-control input[type="range"] {
-    width: 70px;
-    height: 3px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 2px;
-    outline: none;
-    -webkit-appearance: none;
-}
-
-.effect-control input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 12px;
-    height: 12px;
-    background: #00ffff;
-    border-radius: 50%;
-    cursor: pointer;
+    width: 100px;
 }
 
 .action-buttons {
@@ -420,472 +356,48 @@ body {
 }
 
 .action-buttons button {
-    padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
+    background: #333;
+    border: 1px solid #555;
     color: #fff;
-    font-size: 13px;
+    padding: 10px 20px;
+    border-radius: 5px;
     cursor: pointer;
-    transition: all 0.3s;
-    outline: none;
+    font-size: 14px;
 }
 
-.action-buttons button:active {
-    transform: scale(0.95);
+.action-buttons button:hover {
+    background: #444;
 }
 
-#record {
-    background: rgba(255, 0, 0, 0.3);
-    border-color: rgba(255, 0, 0, 0.5);
+#metronome-toggle.active {
+    background: #4a4;
+    border-color: #5b5;
 }
 
-#panic {
-    background: rgba(255, 100, 0, 0.3);
-    border-color: rgba(255, 100, 0, 0.5);
-    font-weight: bold;
-}
-
-#help {
-    width: 30px;
-    height: 30px;
-    padding: 0;
-    border-radius: 50%;
-    font-weight: bold;
-}
-
-/* Touch indicators */
+/* Touch Indicators */
 .touch-indicators {
     position: fixed;
-    top: 20px;
-    right: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 10;
-    max-height: 50vh;
-    overflow-y: auto;
-}
-
-.touch-indicator-item {
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 15px;
-    padding: 10px 15px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    animation: fadeIn 0.2s;
-}
-
-.indicator-instrument {
-    font-size: 12px;
-    font-weight: bold;
-    color: #00ffff;
-    min-width: 60px;
-}
-
-.indicator-note {
-    font-size: 20px;
-    font-weight: bold;
-    color: #fff;
-    min-width: 40px;
-    text-align: center;
-}
-
-.indicator-freq {
-    font-size: 11px;
-    color: #888;
-}
-
-/* Grid Sequencer View */
-.grid-sequencer {
-    position: fixed;
-    top: 60px;
-    left: 400px;
-    width: calc(100% - 400px);
-    height: calc(100% - 60px);
-    background: rgba(0, 0, 0, 0.95);
-    z-index: 2;
-    display: none;
-    transition: left 0.3s ease, width 0.3s ease;
-}
-
-.grid-sequencer.fullscreen {
-    left: 60px;
-    width: calc(100% - 60px);
-}
-
-.sequencer-controls {
-    display: flex;
-    gap: 10px;
-    padding: 15px;
-    background: rgba(0, 0, 0, 0.8);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.sequencer-controls button {
-    padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #fff;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.sequencer-controls button:hover {
-    background: rgba(0, 255, 255, 0.3);
-}
-
-.sequencer-grid {
-    padding: 20px;
-    height: calc(100% - 70px);
-    overflow-y: auto;
-    overflow-x: auto;
-}
-
-.track-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
-    align-items: center;
-    min-width: fit-content;
-}
-
-.track-label {
-    width: 120px;
-    font-size: 14px;
-    font-weight: bold;
-    color: #00ffff;
-    text-align: right;
-    padding-right: 10px;
-}
-
-.beat-slots {
-    display: flex;
-    gap: 8px;
-    flex-wrap: nowrap;
-}
-
-.beat-slot {
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.beat-slot:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.1);
-}
-
-.beat-slot.active {
-    background: rgba(0, 255, 255, 0.5);
-    border-color: rgba(0, 255, 255, 0.8);
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-}
-
-.beat-slot.playing {
-    background: rgba(255, 255, 0, 0.6);
-    border-color: rgba(255, 255, 0, 0.9);
-    box-shadow: 0 0 20px rgba(255, 255, 0, 0.7);
-    transform: scale(1.2);
-}
-
-.beat-slot.bar-start {
-    border-left: 3px solid rgba(255, 165, 0, 0.8);
-    margin-left: 8px;
-}
-
-.beat-slot.quarter-note {
-    width: 80px;
-    height: 40px;
-}
-
-.beat-slot.eighth-note {
-    width: 40px;
-    height: 40px;
-}
-
-.beat-slot.sixteenth-note {
-    width: 20px;
-    height: 40px;
-}
-
-.track-resolution {
-    width: 60px;
-    padding: 4px;
-    margin-right: 10px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #fff;
-    border-radius: 4px;
-    font-size: 12px;
-}
-
-/* Single Track View */
-.single-track-view {
-    position: fixed;
-    top: 60px;
-    left: 400px;
-    width: calc(100% - 400px);
-    height: calc(100% - 60px);
-    background: #000;
-    z-index: 2;
-    display: none;
-    transition: left 0.3s ease, width 0.3s ease;
-}
-
-.single-track-view.fullscreen {
-    left: 60px;
-    width: calc(100% - 60px);
-}
-
-.single-track-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    background: rgba(0, 0, 0, 0.8);
-    border-bottom: 2px solid rgba(0, 255, 255, 0.3);
-}
-
-.single-track-header h3 {
-    color: #00ffff;
-    margin: 0;
-}
-
-#single-track-select {
-    padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #fff;
-    border-radius: 6px;
-    font-size: 14px;
-}
-
-#singleTrackCanvas {
-    width: 100%;
-    height: calc(100% - 60px);
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Menus */
-.preset-menu, .help-menu {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.95);
-    backdrop-filter: blur(20px);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
-    padding: 30px;
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    min-width: 280px;
-    max-width: 90vw;
-}
-
-.preset-menu h3, .help-menu h3 {
-    text-align: center;
-    color: #00ffff;
-    margin-bottom: 10px;
-}
-
-.preset-btn, .help-close {
-    padding: 12px 20px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    color: #fff;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s;
-    outline: none;
-}
-
-.preset-btn:hover, .help-close:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.help-menu p {
-    margin: 5px 0;
-    color: #ccc;
-    font-size: 14px;
-}
-
-.help-close {
-    margin-top: 10px;
-    align-self: center;
-}
-
-.recording-indicator {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(255, 0, 0, 0.8);
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-weight: bold;
-    animation: pulse 1s ease-in-out infinite;
-    z-index: 10;
-}
-
-@keyframes pulse {
-    0% { opacity: 0.8; }
-    50% { opacity: 1; }
-    100% { opacity: 0.8; }
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .zone-label {
-        font-size: 14px;
-        left: 10px;
-    }
-    
-    .control-panel {
-        font-size: 12px;
-    }
-    
-    .panel-header h3 {
-        font-size: 14px;
-    }
-    
-    .controls-row, .effects-row {
-        gap: 15px;
-    }
-    
-    .control-item input[type="range"] {
-        width: 70px;
-    }
-    
-    .touch-indicators {
-        right: 10px;
-        top: 10px;
-    }
-    
-    .touch-indicator-item {
-        padding: 8px 12px;
-        font-size: 12px;
-    }
-    
-    .indicator-note {
-        font-size: 16px;
-    }
-}
-
-@media (max-height: 600px) {
-    .control-panel {
-        max-height: 40vh;
-        overflow-y: auto;
-    }
-    
-    .panel-content {
-        gap: 10px;
-        padding: 10px;
-    }
-}
-
-/* Metronome button */
-.metro-btn {
-    padding: 6px 12px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 6px;
-    color: #fff;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.metro-btn.active {
-    background: rgba(0, 255, 0, 0.3);
-    border-color: rgba(0, 255, 0, 0.6);
-    color: #0f0;
-}
-
-.metro-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-/* Loop button */
-.loop-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #fff;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.loop-btn.active {
-    background: rgba(255, 165, 0, 0.3);
-    border-color: rgba(255, 165, 0, 0.6);
-    color: #ffa500;
-}
-
-.loop-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-
-/* Prevent iOS bounce */
-html, body {
-    position: fixed;
-    overflow: hidden;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
+    pointer-events: none;
+    z-index: 500;
 }
 
-/* Optimize for touch */
-* {
-    -webkit-tap-highlight-color: transparent;
-}
-
-button, select, input {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-}
-
-/* Debug panel */
+/* Debug Panel */
 .debug-panel {
     position: fixed;
-    bottom: 20px;
-    right: 20px; /* Move to right side */
+    bottom: 10px;
+    right: 10px;
     width: 300px;
     max-height: 200px;
     background: rgba(0, 0, 0, 0.9);
-    border: 1px solid rgba(0, 255, 0, 0.3);
-    border-radius: 10px;
-    z-index: 100;
+    border: 1px solid #333;
+    border-radius: 5px;
+    z-index: 1000;
     font-family: monospace;
     font-size: 11px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
 }
 
 .debug-header {
@@ -893,9 +405,8 @@ button, select, input {
     justify-content: space-between;
     align-items: center;
     padding: 5px 10px;
-    background: rgba(0, 255, 0, 0.1);
-    border-bottom: 1px solid rgba(0, 255, 0, 0.3);
-    color: #0f0;
+    background: #111;
+    border-bottom: 1px solid #333;
 }
 
 .debug-buttons {
@@ -903,434 +414,853 @@ button, select, input {
     gap: 5px;
 }
 
-#clear-debug, #copy-debug {
-    padding: 2px 8px;
-    font-size: 10px;
+.debug-buttons button {
+    background: #333;
+    border: none;
     color: #fff;
+    padding: 2px 8px;
     border-radius: 3px;
     cursor: pointer;
-}
-
-#clear-debug {
-    background: rgba(255, 0, 0, 0.3);
-    border: 1px solid rgba(255, 0, 0, 0.5);
-}
-
-#copy-debug {
-    background: rgba(0, 150, 255, 0.3);
-    border: 1px solid rgba(0, 150, 255, 0.5);
+    font-size: 10px;
 }
 
 #debug-log {
-    flex: 1;
+    max-height: 150px;
     overflow-y: auto;
-    padding: 10px;
-    color: #0f0;
-    line-height: 1.4;
+    padding: 5px;
 }
 
-.debug-entry {
-    margin-bottom: 5px;
-    padding: 3px;
-    border-left: 2px solid #0f0;
-    padding-left: 8px;
+.log-entry {
+    margin-bottom: 2px;
+    white-space: pre-wrap;
+    word-break: break-all;
 }
 
-.debug-entry.error {
-    color: #ff0000;
-    border-left-color: #ff0000;
-}
-
-.debug-entry.warn {
-    color: #ffaa00;
-    border-left-color: #ffaa00;
-}
-
-/* Sound Generation UI */
-.sound-gen-btn {
-    background: rgba(148, 0, 211, 0.3);
-    border: 1px solid rgba(148, 0, 211, 0.6);
-    color: #fff;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.3s;
-    outline: none;
-    pointer-events: all;
-    flex-shrink: 0;
-}
-
-.sound-gen-btn:hover {
-    background: rgba(148, 0, 211, 0.5);
-    border-color: rgba(148, 0, 211, 0.8);
-    box-shadow: 0 0 10px rgba(148, 0, 211, 0.5);
-}
-
-.sound-gen-btn.has-sample {
-    background: rgba(0, 255, 0, 0.3);
-    border-color: rgba(0, 255, 0, 0.6);
-}
-
-.sound-gen-btn.has-sample:hover {
-    background: rgba(0, 255, 0, 0.5);
-    border-color: rgba(0, 255, 0, 0.8);
-    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-}
-
-/* Sound Generation Modal */
-.sound-gen-modal {
+/* Modals */
+.modal {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.8);
-    z-index: 200;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(10px);
+    z-index: 1000;
 }
 
 .modal-content {
-    background: rgba(0, 0, 0, 0.95);
-    border: 2px solid rgba(148, 0, 211, 0.5);
-    border-radius: 20px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 10px;
     padding: 30px;
-    max-width: 90vw;
-    width: 400px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    max-width: 500px;
+    width: 90%;
 }
 
-.modal-content h3 {
-    color: #00ffff;
-    text-align: center;
-    margin: 0;
-    text-shadow: 0 0 10px #00ffff;
+.sound-gen-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+}
+
+.sound-gen-modal .modal-content {
+    max-width: 600px;
 }
 
 .api-key-section {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 15px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #333;
 }
 
-.api-key-section label {
-    font-size: 14px;
-    color: #ccc;
-}
-
-#elevenlabs-api-key {
-    padding: 10px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 5px;
-    color: #fff;
-    font-size: 14px;
-    outline: none;
-}
-
-#save-api-key {
-    padding: 8px 16px;
-    background: rgba(0, 255, 0, 0.3);
-    border: 1px solid rgba(0, 255, 0, 0.5);
-    border-radius: 5px;
-    color: #fff;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-#save-api-key:hover {
-    background: rgba(0, 255, 0, 0.5);
-}
-
-.sound-gen-section {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
+.api-key-section label,
 .sound-gen-section label {
-    font-size: 14px;
-    color: #ccc;
+    display: block;
+    margin-bottom: 10px;
+    color: #aaa;
+}
+
+#elevenlabs-api-key,
+#sound-prompt {
+    width: 100%;
+    background: #111;
+    border: 1px solid #444;
+    color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: inherit;
 }
 
 #sound-prompt {
-    padding: 10px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 5px;
-    color: #fff;
-    font-size: 14px;
     min-height: 80px;
     resize: vertical;
-    outline: none;
+}
+
+#save-api-key {
+    margin-top: 10px;
+    background: #4a4;
+    border: none;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
 }
 
 .gen-actions {
     display: flex;
     gap: 10px;
-    justify-content: center;
+    margin-top: 15px;
 }
 
-#generate-sound, #cancel-gen {
-    padding: 10px 20px;
+#generate-sound,
+#cancel-gen {
+    flex: 1;
+    padding: 10px;
+    border: none;
     border-radius: 5px;
-    color: #fff;
     cursor: pointer;
-    transition: all 0.3s;
     font-size: 14px;
 }
 
 #generate-sound {
-    background: rgba(148, 0, 211, 0.3);
-    border: 1px solid rgba(148, 0, 211, 0.5);
-}
-
-#generate-sound:hover {
-    background: rgba(148, 0, 211, 0.5);
+    background: #4a4;
+    color: #fff;
 }
 
 #cancel-gen {
-    background: rgba(255, 0, 0, 0.3);
-    border: 1px solid rgba(255, 0, 0, 0.5);
-}
-
-#cancel-gen:hover {
-    background: rgba(255, 0, 0, 0.5);
+    background: #444;
+    color: #fff;
 }
 
 .loading-indicator {
     text-align: center;
+    margin-top: 20px;
 }
 
 .spinner {
     width: 40px;
     height: 40px;
-    margin: 0 auto 10px;
-    border: 3px solid rgba(255, 255, 255, 0.1);
-    border-top-color: #00ffff;
+    border: 4px solid #333;
+    border-top-color: #4a4;
     border-radius: 50%;
     animation: spin 1s linear infinite;
+    margin: 0 auto;
 }
 
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
 
-.loading-indicator p {
-    color: #00ffff;
-    font-size: 14px;
+/* Sound Library Modal */
+.sound-library-content {
+    max-width: 800px;
+    max-height: 600px;
+    display: flex;
+    flex-direction: column;
 }
 
-.sound-mode-toggle {
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.sound-categories {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.category-btn {
+    background: #333;
+    border: 1px solid #555;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.category-btn.active {
+    background: #4a4;
+    border-color: #5b5;
+}
+
+.sound-list {
+    flex: 1;
+    overflow-y: auto;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.sound-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding: 10px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 5px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 5px;
 }
 
-.sound-mode-toggle label {
+.sound-name {
+    flex: 1;
+    font-size: 14px;
+    margin-right: 10px;
+}
+
+.sound-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.sound-action-btn {
+    background: #333;
+    border: 1px solid #555;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    min-width: 45px;
+    transition: all 0.2s;
+}
+
+.sound-action-btn:hover {
+    background: #444;
+    border-color: #666;
+}
+
+.delete-sound-btn {
+    background: #662222;
+    border-color: #884444;
+}
+
+.delete-sound-btn:hover {
+    background: #883333;
+    border-color: #aa5555;
+}
+
+.library-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+#add-category-btn,
+#generate-new-sound-btn {
+    flex: 1;
+    background: #333;
+    border: 1px solid #555;
+    color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .track-controls {
+        width: 250px;
+    }
+    
+    .control-panel {
+        left: 250px;
+    }
+    
+    .multi-track-view,
+    .piano-roll {
+        left: 250px;
+    }
+}
+
+/* Range input styling */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-track {
+    background: #333;
+    height: 4px;
+    border-radius: 2px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    background: #fff;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    margin-top: -6px;
+}
+
+input[type="range"]::-moz-range-track {
+    background: #333;
+    height: 4px;
+    border-radius: 2px;
+}
+
+input[type="range"]::-moz-range-thumb {
+    background: #fff;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    border: none;
+}
+
+/* Audio Editor Styles */
+.audio-editor-content {
+    max-width: 900px;
+    max-height: 600px;
+}
+
+.audio-editor-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: #222;
+    border-radius: 5px;
+}
+
+.audio-editor-controls button {
+    background: #333;
+    border: 1px solid #555;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.audio-editor-controls button:hover {
+    background: #444;
+}
+
+.waveform-container {
+    position: relative;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+#waveform-canvas {
+    display: block;
+    width: 100%;
+    height: 200px;
+    background: #111;
+}
+
+.trim-markers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+}
+
+.trim-marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background: #ff4444;
+    pointer-events: all;
+    cursor: ew-resize;
+    z-index: 10;
+    user-select: none;
+    border: 1px solid #fff;
+    box-shadow: 0 0 4px rgba(0,0,0,0.8);
+}
+
+.trim-marker.start-marker {
+    background: #00ff00;
+    border-color: #004400;
+}
+
+.trim-marker.end-marker {
+    background: #ff0000;
+    border-color: #440000;
+}
+
+.trim-marker:hover {
+    opacity: 0.8;
+    transform: scaleX(1.5);
+}
+
+.marker-handle {
+    position: absolute;
+    top: 50%;
+    left: -10px;
+    width: 20px;
+    height: 20px;
+    background: inherit;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    border: 3px solid #fff;
+    cursor: ew-resize;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.marker-handle:hover {
+    transform: translateY(-50%) scale(1.2);
+}
+
+.marker-label {
+    position: absolute;
+    top: -25px;
+    left: -20px;
+    width: 40px;
+    text-align: center;
+    font-size: 12px;
+    color: #fff;
+    background: rgba(0,0,0,0.8);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.trim-info {
+    text-align: center;
+    color: #ccc;
+    font-size: 14px;
+    padding: 10px;
+    background: #222;
+    border-radius: 5px;
+}
+
+/* Track Picker Styles */
+.track-picker-content {
+    max-width: 400px;
+}
+
+.track-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 20px;
+}
+
+.track-picker-btn {
+    background: #333;
+    border: 1px solid #555;
+    color: #fff;
+    padding: 15px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.track-picker-btn:hover {
+    background: #444;
+    border-color: #666;
+    transform: translateY(-2px);
+}
+
+/* Custom Message Styles */
+.custom-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    max-width: 400px;
+}
+
+.message-content {
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 5px;
+    padding: 15px 20px;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.message-content.success {
+    background: #2d4a2d;
+    border-color: #4a7c4a;
+}
+
+.message-content.error {
+    background: #4a2d2d;
+    border-color: #7c4a4a;
+}
+
+#message-close {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 18px;
+    cursor: pointer;
+    margin-left: 15px;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+}
+
+#message-close:hover {
+    color: #fff;
+}
+
+/* ===== BEAT SEQUENCER STYLES ===== */
+.beat-sequencer-section {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(20, 20, 20, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 2px solid #333;
+    z-index: 100;
+}
+
+.sequencer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    border-bottom: 1px solid #333;
+    background: rgba(30, 30, 30, 0.8);
+}
+
+.sequencer-header h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 18px;
+}
+
+.sequencer-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.seq-control-btn {
+    background: linear-gradient(135deg, #4a9eff, #0084ff);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.seq-control-btn:hover {
+    background: linear-gradient(135deg, #5aa8ff, #2090ff);
+    transform: translateY(-1px);
+}
+
+.seq-control-btn.playing {
+    background: linear-gradient(135deg, #ff4757, #ff3838);
+}
+
+.seq-toggle-btn {
+    background: linear-gradient(135deg, #26de81, #20bf6b);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.seq-toggle-btn:hover {
+    background: linear-gradient(135deg, #2ed573, #26d08a);
+    transform: translateY(-1px);
+}
+
+.seq-settings {
     display: flex;
     align-items: center;
     gap: 10px;
     color: #ccc;
     font-size: 14px;
-    cursor: pointer;
 }
 
-.sound-mode-toggle input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-}
-
-/* Track selector pointer events fix */
-.track-selector {
-    pointer-events: all;
-}
-
-/* Effects Toggle Button */
-.effects-toggle-btn {
-    background: rgba(255, 165, 0, 0.3);
-    border: 1px solid rgba(255, 165, 0, 0.6);
-    color: #fff;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.3s;
-    outline: none;
-    pointer-events: all;
-    flex-shrink: 0;
-}
-
-.effects-toggle-btn:hover {
-    background: rgba(255, 165, 0, 0.5);
-    border-color: rgba(255, 165, 0, 0.8);
-    box-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
-}
-
-.effects-toggle-btn.active {
-    background: rgba(255, 165, 0, 0.7);
-    border-color: rgba(255, 165, 0, 1);
-}
-
-/* Track Effects Panel */
-.track-effects-panel {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.95);
-    border: 2px solid rgba(255, 165, 0, 0.7);
-    border-radius: 15px;
-    padding: 15px;
-    display: none; /* Hidden by default */
-    flex-direction: row;
-    gap: 20px;
-    z-index: 200;
-    pointer-events: all;
-    min-width: 400px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-}
-
-.track-effects-panel.active {
-    display: flex;
-}
-
-.track-effects-panel .effect-control {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    min-width: 80px;
-}
-
-.track-effects-panel .effect-control label {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.9);
+.seq-settings label {
     font-weight: bold;
-    white-space: nowrap;
-    text-shadow: 0 0 5px rgba(255, 165, 0, 0.5);
 }
 
-.track-effects-panel .effect-control input[type="range"] {
+.seq-settings select {
+    background: #333;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
+.seq-settings input[type="range"] {
     width: 80px;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    outline: none;
-    cursor: pointer;
-    touch-action: manipulation;
 }
 
-.track-effects-panel .effect-control input[type="range"]::-webkit-slider-thumb {
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    background: linear-gradient(45deg, #ff6600, #ff9900);
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-    border: 2px solid #fff;
-}
-
-.track-effects-panel .effect-control input[type="range"]::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    background: linear-gradient(45deg, #ff6600, #ff9900);
-    border-radius: 50%;
-    cursor: pointer;
-    border: 2px solid #fff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-}
-
-.track-effects-panel .effect-control input[type="range"]::-webkit-slider-track {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    height: 8px;
-}
-
-.track-effects-panel .effect-control input[type="range"]::-moz-range-track {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    height: 8px;
-    border: none;
-}
-
-.track-effects-panel .effect-control .effect-value {
-    font-size: 11px;
-    color: rgba(255, 165, 0, 0.9);
-    font-weight: bold;
-    background: rgba(255, 165, 0, 0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
-    border: 1px solid rgba(255, 165, 0, 0.3);
-    min-width: 25px;
+#swing-value {
+    min-width: 30px;
     text-align: center;
 }
 
-
-/* Track selection highlighting */
-.track-control-row.selected {
-    background: rgba(0, 255, 0, 0.2) !important;
-    border: 1px solid rgba(0, 255, 0, 0.5);
+/* Sequencer Grid */
+.sequencer-grid {
+    padding: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+    position: relative;
 }
 
-/* Multi-track view */
-.multi-track-view {
-    position: absolute;
-    top: 60px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: block;
+.sequencer-tracks {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.track-label {
-    font-size: 18px;
+.seq-track {
+    display: flex;
+    align-items: center;
+    background: rgba(40, 40, 40, 0.8);
+    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid #444;
+}
+
+.seq-track-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 180px;
+    flex-shrink: 0;
+}
+
+.seq-track-label {
+    color: white;
     font-weight: bold;
-    color: #0f0;
+    min-width: 60px;
 }
 
-.gesture-info {
+.seq-track-mute,
+.seq-track-solo {
+    background: #555;
+    color: white;
+    border: none;
+    width: 30px;
+    height: 25px;
+    border-radius: 4px;
+    cursor: pointer;
     font-size: 12px;
-    color: #888;
+    font-weight: bold;
+    transition: all 0.2s ease;
 }
 
-#singleTrackCanvas {
+.seq-track-mute:hover {
+    background: #666;
+}
+
+.seq-track-mute.active {
+    background: #ff4757;
+    color: white;
+}
+
+.seq-track-solo:hover {
+    background: #666;
+}
+
+.seq-track-solo.active {
+    background: #ffa502;
+    color: white;
+}
+
+.seq-track-volume {
+    width: 60px;
+    height: 4px;
+    background: #333;
+    border-radius: 2px;
+    appearance: none;
+    cursor: pointer;
+}
+
+.seq-track-volume::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #4a9eff;
+    cursor: pointer;
+}
+
+.seq-track-volume::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #4a9eff;
+    cursor: pointer;
+    border: none;
+}
+
+/* Step Grid */
+.seq-steps {
+    display: flex;
+    gap: 3px;
+    flex: 1;
+    margin-left: 20px;
+}
+
+.seq-step {
+    width: 40px;
+    height: 40px;
+    background: #2a2a2a;
+    border: 2px solid #444;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    font-size: 0;
+}
+
+.seq-step:hover {
+    background: #3a3a3a;
+    border-color: #555;
+    transform: scale(1.05);
+}
+
+.seq-step.active {
+    background: linear-gradient(135deg, #4a9eff, #0084ff);
+    border-color: #4a9eff;
+    box-shadow: 0 0 10px rgba(74, 158, 255, 0.5);
+}
+
+.seq-step.current {
+    border-color: #fff;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+}
+
+.seq-step.downbeat {
+    border-color: #ffa502;
+    background: #3a3015;
+}
+
+.seq-step.downbeat.active {
+    background: linear-gradient(135deg, #ffa502, #ff9500);
+    border-color: #ffa502;
+    box-shadow: 0 0 10px rgba(255, 165, 2, 0.5);
+}
+
+/* Step Numbers */
+.step-numbers {
+    display: flex;
+    gap: 3px;
+    margin-left: 200px;
+    margin-bottom: 10px;
+}
+
+.step-number {
+    width: 40px;
+    height: 20px;
+    color: #ccc;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.step-number.downbeat {
+    color: #ffa502;
+    font-weight: bolder;
+}
+
+/* Playhead */
+.playhead {
     position: absolute;
     top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #000;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #ff4757, #ff3838);
+    box-shadow: 0 0 10px rgba(255, 71, 87, 0.8);
+    z-index: 10;
+    display: none;
+    margin-left: 200px;
+    transform: translateX(-1px);
 }
 
-.effect-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
+/* Responsive Design */
+@media (max-width: 768px) {
+    .sequencer-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    
+    .sequencer-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .seq-track-info {
+        min-width: 120px;
+        font-size: 12px;
+    }
+    
+    .seq-step {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .step-numbers {
+        margin-left: 140px;
+    }
+    
+    .playhead {
+        margin-left: 140px;
+    }
+    
+    .seq-steps {
+        margin-left: 10px;
+    }
+    
+    .step-number {
+        width: 30px;
+        font-size: 10px;
+    }
 }
 
-.effect-indicator {
-    font-size: 24px;
-    font-weight: bold;
-    color: #0f0;
-    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-    opacity: 0;
-    transition: opacity 0.5s;
+/* Animation for active steps */
+@keyframes stepPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.seq-step.active.current {
+    animation: stepPulse 0.3s ease-in-out;
 }

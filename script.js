@@ -673,6 +673,9 @@ function setupModals() {
         log('ERROR: save-api-key button not found');
     }
     
+    // Setup prompt builder buttons
+    setupPromptBuilders();
+    
     const generateSoundBtn = document.getElementById('generate-sound');
     if (generateSoundBtn) {
         generateSoundBtn.addEventListener('click', () => {
@@ -770,6 +773,9 @@ function openSoundGenerationModal(trackIndex) {
         }
     }
     
+    // Update project value displays in prompt builder
+    updateProjectValueDisplays();
+    
     log(`Opened sound generation modal for track ${trackIndex + 1}`);
 }
 
@@ -778,6 +784,9 @@ function closeSoundGenerationModal() {
     document.getElementById('sound-prompt').value = '';
     log('Closed sound generation modal');
 }
+
+// Store generated sounds temporarily
+let generatedSounds = [];
 
 async function generateSound() {
     const prompt = document.getElementById('sound-prompt').value;
@@ -792,13 +801,60 @@ async function generateSound() {
         return;
     }
     
-    log(`Generating sound: "${prompt}" for track ${selectedTrack + 1}`);
+    log(`Generating 3 sound variations: "${prompt}" for track ${selectedTrack + 1}`);
     
     // Show loading indicator
     document.querySelector('.loading-indicator').style.display = 'block';
     document.getElementById('generate-sound').disabled = true;
     
+    // Hide any previous results
+    document.querySelector('.generated-sounds-section').style.display = 'none';
+    
     try {
+        const promises = [];
+        
+        // Generate 3 variations concurrently
+        for (let i = 0; i < 3; i++) {
+            promises.push(generateSingleSound(prompt, i + 1));
+        }
+        
+        // Wait for all generations to complete
+        const results = await Promise.all(promises);
+        
+        // Debug logging
+        log(`Promise.all returned ${results.length} results`);
+        results.forEach((result, index) => {
+            if (result) {
+                log(`Result ${index}: variation ${result.variationNumber}, name: "${result.name}"`);
+            } else {
+                log(`Result ${index}: null (failed)`);
+            }
+        });
+        
+        // Store results and display them
+        generatedSounds = results.filter(result => result !== null); // Filter out any failed generations
+        
+        if (generatedSounds.length === 0) {
+            throw new Error('All sound generations failed');
+        }
+        
+        log(`Successfully generated ${generatedSounds.length} sound variations`);
+        log('generatedSounds array:', generatedSounds.map(s => `Variation ${s.variationNumber}`));
+        displayGeneratedSounds();
+        
+    } catch (error) {
+        log('ERROR: Failed to generate sounds:', error);
+        alert(`Failed to generate sounds: ${error.message}`);
+    } finally {
+        document.querySelector('.loading-indicator').style.display = 'none';
+        document.getElementById('generate-sound').disabled = false;
+    }
+}
+
+async function generateSingleSound(prompt, variationNumber) {
+    try {
+        log(`Generating variation ${variationNumber}...`);
+        
         // Call ElevenLabs API
         const response = await fetch('https://api.elevenlabs.io/v1/sound-generation', {
             method: 'POST',
@@ -810,7 +866,7 @@ async function generateSound() {
             body: JSON.stringify({
                 text: prompt,
                 duration_seconds: 2.0,
-                prompt_influence: 0.3
+                prompt_influence: 0.3 + (variationNumber - 1) * 0.1 // Slight variation in influence
             })
         });
         
@@ -821,47 +877,316 @@ async function generateSound() {
         // Get audio data
         const audioBlob = await response.blob();
         
-        // Convert blob to base64 for permanent storage
+        // Convert blob to base64 for storage
         const base64Data = await blobToBase64(audioBlob);
         
-        // Create both blob URL (for immediate use) and base64 (for storage)
+        // Create blob URL for immediate playback
         const audioUrl = URL.createObjectURL(audioBlob);
         
-        // Save to sound library with base64 data
-        const soundId = Date.now().toString();
-        const soundData = {
-            id: soundId,
+        // Determine category automatically - first try prompt builder, then analyze prompt text
+        let autoCategory = 'favorites';
+        if (promptBuilder.selectedSoundType) {
+            autoCategory = getCategoryForSoundType(promptBuilder.selectedSoundType);
+            log(`Category from prompt builder: ${autoCategory} (sound type: ${promptBuilder.selectedSoundType})`);
+        } else {
+            // Fallback to text analysis if no prompt builder selection
+            autoCategory = detectCategoryFromPrompt(prompt) || 'favorites';
+            log(`Category from text analysis: ${autoCategory}`);
+        }
+        
+        return {
+            id: Date.now().toString() + '_' + variationNumber,
             name: prompt,
-            url: base64Data, // Store base64 instead of blob URL
-            category: 'user',
+            url: base64Data,
+            playbackUrl: audioUrl, // For immediate playback
+            category: autoCategory,
+            variationNumber: variationNumber,
             created: new Date().toISOString()
         };
         
-        if (!soundLibrary.user) {
-            soundLibrary.user = [];
+    } catch (error) {
+        log(`ERROR: Failed to generate variation ${variationNumber}:`, error);
+        return null;
+    }
+}
+
+function displayGeneratedSounds() {
+    const grid = document.getElementById('generated-sounds-grid');
+    if (!grid) {
+        log('ERROR: generated-sounds-grid element not found');
+        return;
+    }
+    
+    grid.innerHTML = '';
+    
+    log(`displayGeneratedSounds called with ${generatedSounds.length} sounds`);
+    
+    generatedSounds.forEach((sound, index) => {
+        log(`Creating display for sound ${index}: Variation ${sound.variationNumber}`);
+        const soundItem = document.createElement('div');
+        soundItem.className = 'generated-sound-item';
+        soundItem.innerHTML = `
+            <div class="sound-preview">
+                <div class="sound-info">
+                    <h5>Variation ${sound.variationNumber}</h5>
+                    <p class="sound-prompt">${sound.name}</p>
+                </div>
+                <div class="sound-controls">
+                    <button class="preview-play-btn" data-index="${index}" title="Play preview">▶</button>
+                    <button class="add-to-library-btn" data-index="${index}" title="Add to library">
+                        <span class="plus-icon">+</span>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        grid.appendChild(soundItem);
+        log(`Added sound item ${index} to grid`);
+    });
+    
+    // Show the results section
+    const resultsSection = document.querySelector('.generated-sounds-section');
+    if (resultsSection) {
+        resultsSection.style.display = 'block';
+        log('Showed generated-sounds-section');
+    } else {
+        log('ERROR: generated-sounds-section not found');
+    }
+    
+    // Setup event listeners
+    setupGeneratedSoundsListeners();
+    
+    log(`Displayed ${generatedSounds.length} generated sound variations`);
+}
+
+function setupGeneratedSoundsListeners() {
+    // Preview play buttons
+    document.querySelectorAll('.preview-play-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const target = e.target.closest('.preview-play-btn'); // Get the actual button even if child element clicked
+            const index = parseInt(target.dataset.index);
+            if (!isNaN(index)) {
+                playGeneratedSound(index);
+            } else {
+                log('ERROR: Invalid index for play button:', target.dataset.index);
+            }
+        });
+    });
+    
+    // Add to library buttons
+    document.querySelectorAll('.add-to-library-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const target = e.target.closest('.add-to-library-btn'); // Get the actual button even if child element clicked
+            const index = parseInt(target.dataset.index);
+            if (!isNaN(index)) {
+                addSoundToLibrary(index);
+            } else {
+                log('ERROR: Invalid index for add button:', target.dataset.index);
+            }
+        });
+    });
+    
+    // Results action buttons
+    document.getElementById('add-all-sounds').onclick = addAllSoundsToLibrary;
+    document.getElementById('generate-more').onclick = generateSound;
+    document.getElementById('close-results').onclick = closeGenerationResults;
+}
+
+function playGeneratedSound(index) {
+    const sound = generatedSounds[index];
+    if (!sound || !sound.playbackUrl) return;
+    
+    try {
+        const audio = new Audio(sound.playbackUrl);
+        audio.play();
+        log(`Playing generated sound variation ${sound.variationNumber}`);
+        
+        // Visual feedback
+        const btn = document.querySelector(`[data-index="${index}"].preview-play-btn`);
+        if (btn) {
+            btn.textContent = '🔊';
+            setTimeout(() => {
+                btn.textContent = '▶';
+            }, 2000);
         }
-        soundLibrary.user.push(soundData);
-        saveSoundLibrary();
-        
-        // Load sound into track
-        if (audioEngine) {
-            await audioEngine.loadSample(selectedTrack, audioUrl, soundData.name);
-        }
-        
-        // Update sound selector dropdown
-        updateSoundSelector(selectedTrack, soundData.name, soundData.id);
-        
-        log(`Sound generated and loaded: "${prompt}"`);
-        alert('Sound generated successfully!');
-        closeSoundGenerationModal();
         
     } catch (error) {
-        log('ERROR: Failed to generate sound:', error);
-        alert(`Failed to generate sound: ${error.message}`);
-    } finally {
-        document.querySelector('.loading-indicator').style.display = 'none';
-        document.getElementById('generate-sound').disabled = false;
+        log(`ERROR: Failed to play generated sound:`, error);
     }
+}
+
+function addSoundToLibrary(index) {
+    const sound = generatedSounds[index];
+    if (!sound) {
+        log('ERROR: No sound found at index', index);
+        return;
+    }
+    
+    // Determine the correct category based on the prompt content
+    const detectedCategory = detectCategoryFromPrompt(sound.name);
+    const finalCategory = detectedCategory || sound.category || 'favorites';
+    
+    log(`Adding sound to library: "${sound.name}" -> Category: ${finalCategory}`);
+    
+    // Ensure the category array exists
+    if (!soundLibrary[finalCategory]) {
+        soundLibrary[finalCategory] = [];
+        log(`Created new category: ${finalCategory}`);
+    }
+    
+    // Create the sound data object
+    const soundData = {
+        id: sound.id,
+        name: sound.name,
+        url: sound.url,
+        category: finalCategory,
+        created: sound.created
+    };
+    
+    // Add to sound library
+    soundLibrary[finalCategory].push(soundData);
+    
+    // Save to localStorage
+    saveSoundLibrary();
+    
+    // Visual feedback
+    const btn = document.querySelector(`[data-index="${index}"].add-to-library-btn`);
+    if (btn) {
+        btn.innerHTML = '<span class="check-icon">✓</span>';
+        btn.disabled = true;
+        btn.style.background = '#4a9eff';
+        btn.style.color = '#fff';
+    }
+    
+    log(`Successfully added variation ${sound.variationNumber} to ${finalCategory} category: ${sound.name}`);
+    showMessage(`Added "${sound.name}" to ${finalCategory}`, 'success');
+    
+    // Debug: Log current sound library state
+    log(`Sound library now has ${Object.keys(soundLibrary).length} categories`);
+    Object.keys(soundLibrary).forEach(cat => {
+        if (Array.isArray(soundLibrary[cat])) {
+            log(`  ${cat}: ${soundLibrary[cat].length} sounds`);
+        }
+    });
+    
+    // Update sound selectors with new sound
+    populateAllSoundSelectors();
+}
+
+// Enhanced category detection focusing on main sound types (not adjectives)
+function detectCategoryFromPrompt(promptText) {
+    const prompt = promptText.toLowerCase();
+    
+    // Primary sound type keywords - these get highest priority
+    const primarySoundTypes = {
+        // Drum specifics
+        'kick': ['kick drum', 'kick', 'bass drum', '808'],
+        'snare': ['snare drum', 'snare', 'rim shot'],
+        'hihat': ['hi-hat', 'hihat', 'hi hat', 'closed hat', 'open hat'],
+        'percussion': ['cymbal', 'tom', 'clap', 'shaker', 'cowbell', 'conga', 'bongo', 'djembe', 'tabla'],
+        
+        // Bass types
+        'bass': ['bass', 'sub bass', 'bass drop', 'bassline', 'low end'],
+        
+        // Synth specifics
+        'lead': ['lead', 'synth lead', 'solo', 'melody'],
+        'arp': ['arp', 'arpeggio', 'sequence', 'pattern'],
+        'pluck': ['pluck', 'pizzicato', 'picked'],
+        'stab': ['stab', 'hit', 'chord stab'],
+        
+        // Atmospheric
+        'pad': ['pad', 'wash', 'background', 'sustained'],
+        'drone': ['drone', 'sustained tone', 'continuous'],
+        'strings': ['string', 'violin', 'viola', 'cello', 'orchestral'],
+        'bells': ['bell', 'chime', 'glockenspiel', 'carillon'],
+        
+        // Human
+        'vocal': ['vocal', 'voice', 'choir', 'chant', 'sing', 'breath', 'ahh', 'ohh'],
+        
+        // Effects
+        'fx': ['sweep', 'zap', 'whoosh', 'impact', 'riser', 'drop', 'reverse', 'scratch', 'noise', 'laser', 'explosion'],
+        
+        // World
+        'world': ['sitar', 'didgeridoo', 'flute', 'ethnic', 'tribal', 'traditional'],
+        
+        // Organic
+        'organic': ['rain', 'wind', 'fire', 'water', 'footstep', 'bird', 'nature', 'ocean', 'wave', 'forest']
+    };
+    
+    // First pass: Look for exact primary sound type matches (highest priority)
+    for (const [category, keywords] of Object.entries(primarySoundTypes)) {
+        for (const keyword of keywords) {
+            if (prompt.includes(keyword)) {
+                log(`Category detection for "${promptText}": ${category} (exact match: "${keyword}")`);
+                return category;
+            }
+        }
+    }
+    
+    // Second pass: Look for generic terms if no specific match found
+    const genericTerms = {
+        'percussion': ['drum', 'beat', 'percussion', 'rhythm'],
+        'lead': ['synth', 'synthesizer', 'electronic'],
+        'pad': ['ambient', 'atmosphere', 'texture'],
+        'fx': ['effect', 'transition', 'sound effect']
+    };
+    
+    for (const [category, keywords] of Object.entries(genericTerms)) {
+        for (const keyword of keywords) {
+            if (prompt.includes(keyword)) {
+                log(`Category detection for "${promptText}": ${category} (generic match: "${keyword}")`);
+                return category;
+            }
+        }
+    }
+    
+    log(`Category detection for "${promptText}": favorites (no matches found)`);
+    return 'favorites'; // Default fallback
+}
+
+function addAllSoundsToLibrary() {
+    let addedCount = 0;
+    
+    generatedSounds.forEach((sound, index) => {
+        const btn = document.querySelector(`[data-index="${index}"].add-to-library-btn`);
+        if (btn && !btn.disabled) {
+            addSoundToLibrary(index);
+            addedCount++;
+        }
+    });
+    
+    if (addedCount > 0) {
+        showMessage(`Added ${addedCount} variations to library`, 'success');
+        log(`Added all available variations to library: ${addedCount} sounds`);
+    } else {
+        showMessage(`All variations already added`, 'info');
+        log('All variations were already added to library');
+    }
+}
+
+function closeGenerationResults() {
+    // Clean up blob URLs
+    generatedSounds.forEach(sound => {
+        if (sound.playbackUrl) {
+            URL.revokeObjectURL(sound.playbackUrl);
+        }
+    });
+    
+    generatedSounds = [];
+    document.querySelector('.generated-sounds-section').style.display = 'none';
+    
+    // Close sound generation modal and open sound library
+    closeSoundGenerationModal();
+    
+    // Open sound library to show the newly added sounds
+    setTimeout(() => {
+        openSoundLibraryModal();
+        log('Redirected to Sound Library after generation');
+    }, 100); // Small delay to ensure proper modal transition
 }
 
 // Sound Library Functions
@@ -885,8 +1210,24 @@ function loadSoundLibrary() {
 }
 
 function saveSoundLibrary() {
-    localStorage.setItem('soundLibrary', JSON.stringify(soundLibrary));
-    log('Saved sound library to storage');
+    try {
+        const jsonString = JSON.stringify(soundLibrary);
+        localStorage.setItem('soundLibrary', jsonString);
+        
+        // Debug: verify it was saved
+        const saved = localStorage.getItem('soundLibrary');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            const totalSounds = Object.values(parsed).reduce((total, category) => {
+                return total + (Array.isArray(category) ? category.length : 0);
+            }, 0);
+            log(`Successfully saved sound library to storage (${totalSounds} total sounds)`);
+        } else {
+            log('ERROR: Failed to save sound library - localStorage.getItem returned null');
+        }
+    } catch (error) {
+        log('ERROR: Failed to save sound library:', error);
+    }
 }
 
 function displaySoundLibrary(category = 'all') {
@@ -905,12 +1246,17 @@ function displaySoundLibrary(category = 'all') {
     sounds.forEach(sound => {
         const soundItem = document.createElement('div');
         soundItem.className = 'sound-item';
+        const isFavorite = sound.category === 'favorites';
+        const favoriteIcon = isFavorite ? '⭐' : '☆';
+        const favoriteTitle = isFavorite ? 'Remove from favorites' : 'Add to favorites';
+        
         soundItem.innerHTML = `
             <span class="sound-name">${sound.name}</span>
             <div class="sound-buttons">
                 <button class="sound-action-btn edit-sound-btn" data-sound-id="${sound.id}">Edit</button>
                 <button class="sound-action-btn load-sound-btn" data-sound-id="${sound.id}">Load</button>
                 <button class="sound-action-btn play-preview-btn" data-sound-id="${sound.id}">▶</button>
+                <button class="sound-action-btn favorite-sound-btn" data-sound-id="${sound.id}" title="${favoriteTitle}">${favoriteIcon}</button>
                 <button class="sound-action-btn delete-sound-btn" data-sound-id="${sound.id}">🗑️</button>
             </div>
         `;
@@ -925,6 +1271,10 @@ function displaySoundLibrary(category = 'all') {
         
         soundItem.querySelector('.edit-sound-btn').addEventListener('click', () => {
             openAudioEditor(sound);
+        });
+        
+        soundItem.querySelector('.favorite-sound-btn').addEventListener('click', () => {
+            toggleFavorite(sound);
         });
         
         soundItem.querySelector('.delete-sound-btn').addEventListener('click', () => {
@@ -1267,11 +1617,11 @@ async function saveTrimmedAudio() {
             originalId: currentEditingSound.id
         };
         
-        // Add to library
-        if (!soundLibrary.user) {
-            soundLibrary.user = [];
+        // Add to favorites category
+        if (!soundLibrary.favorites) {
+            soundLibrary.favorites = [];
         }
-        soundLibrary.user.push(trimmedSound);
+        soundLibrary.favorites.push(trimmedSound);
         saveSoundLibrary();
         
         log(`Saved trimmed audio: ${trimmedName}`);
@@ -1394,6 +1744,73 @@ async function loadSoundToTrack(sound, trackIndex = null) {
     } catch (error) {
         log(`ERROR: Failed to load sound to track:`, error);
         showMessage(`Failed to load sound: ${error.message}`, 'error');
+    }
+}
+
+// Toggle Favorite Function
+function toggleFavorite(sound) {
+    // Find the sound in the library and get its current category
+    let currentCategory = null;
+    let soundIndex = -1;
+    
+    for (const [category, sounds] of Object.entries(soundLibrary)) {
+        if (Array.isArray(sounds)) {
+            soundIndex = sounds.findIndex(s => s.id === sound.id);
+            if (soundIndex !== -1) {
+                currentCategory = category;
+                break;
+            }
+        }
+    }
+    
+    if (currentCategory && soundIndex !== -1) {
+        // Remove from current category
+        const soundData = soundLibrary[currentCategory][soundIndex];
+        soundLibrary[currentCategory].splice(soundIndex, 1);
+        
+        if (currentCategory === 'favorites') {
+            // Moving out of favorites - determine original category based on sound type
+            // Try to determine from the sound name/prompt
+            let newCategory = 'favorites'; // Default fallback
+            
+            // Simple heuristic based on sound name keywords
+            const soundName = soundData.name.toLowerCase();
+            if (soundName.includes('kick') || soundName.includes('snare') || soundName.includes('drum') || soundName.includes('808') || soundName.includes('cymbal') || soundName.includes('clap')) {
+                newCategory = 'drums';
+            } else if (soundName.includes('bass') || soundName.includes('sub')) {
+                newCategory = 'bass';
+            } else if (soundName.includes('synth') || soundName.includes('lead') || soundName.includes('arp') || soundName.includes('pluck') || soundName.includes('stab')) {
+                newCategory = 'synth';
+            } else if (soundName.includes('pad') || soundName.includes('drone') || soundName.includes('strings') || soundName.includes('ambient')) {
+                newCategory = 'pad';
+            } else if (soundName.includes('vocal') || soundName.includes('voice') || soundName.includes('choir')) {
+                newCategory = 'vocal';
+            } else if (soundName.includes('sweep') || soundName.includes('zap') || soundName.includes('whoosh') || soundName.includes('riser') || soundName.includes('impact')) {
+                newCategory = 'fx';
+            } else if (soundName.includes('djembe') || soundName.includes('tabla') || soundName.includes('sitar') || soundName.includes('didgeridoo') || soundName.includes('flute')) {
+                newCategory = 'world';
+            } else if (soundName.includes('rain') || soundName.includes('wind') || soundName.includes('fire') || soundName.includes('water') || soundName.includes('footsteps')) {
+                newCategory = 'organic';
+            }
+            
+            soundData.category = newCategory;
+            showMessage(`Removed "${soundData.name}" from favorites`, 'success');
+            log(`Removed sound from favorites: ${soundData.name} -> ${newCategory}`);
+        } else {
+            // Moving to favorites
+            soundData.category = 'favorites';
+            showMessage(`Added "${soundData.name}" to favorites`, 'success');
+            log(`Added sound to favorites: ${soundData.name}`);
+        }
+        
+        // Add to new category
+        if (!soundLibrary[soundData.category]) {
+            soundLibrary[soundData.category] = [];
+        }
+        soundLibrary[soundData.category].push(soundData);
+        
+        saveSoundLibrary();
+        displaySoundLibrary();
     }
 }
 
@@ -2149,3 +2566,482 @@ document.addEventListener('click', (e) => {
         closeNoteSelector();
     }
 });
+
+// ===== PROMPT BUILDER FUNCTIONS =====
+
+// State for the new prompt builder
+const promptBuilder = {
+    selectedSoundType: null,
+    selectedAdjectives: new Set(),
+    musicalOptions: {
+        includeKey: false,
+        includeTempo: false,
+        includeScale: false
+    }
+};
+
+// Sound type to category mapping - updated with detailed categories
+const soundTypeCategories = {
+    // Specific Drum Types
+    'kick drum': 'kick',
+    'snare drum': 'snare', 
+    'hi-hat': 'hihat',
+    'cymbal': 'percussion',
+    'tom drum': 'percussion',
+    'clap': 'percussion',
+    'shaker': 'percussion',
+    'cowbell': 'percussion',
+    '808': 'kick', // 808s are kick-style sounds
+    
+    // Bass & Low End
+    'bass': 'bass',
+    'sub bass': 'bass',
+    'bass drop': 'bass',
+    
+    // Synths & Leads - More specific categories
+    'synth lead': 'lead',
+    'arpeggio': 'arp',
+    'pluck': 'pluck',
+    'stab': 'stab',
+    'sequence': 'arp',
+    
+    // Pads & Atmosphere - More specific
+    'pad': 'pad',
+    'drone': 'drone',
+    'choir': 'vocal',
+    'strings': 'strings',
+    'bells': 'bells',
+    'ambient texture': 'pad',
+    
+    // Effects & Transitions
+    'sweep': 'fx',
+    'zap': 'fx',
+    'whoosh': 'fx',
+    'impact': 'fx',
+    'riser': 'fx',
+    
+    // Vocal & Human
+    'vocal': 'vocal',
+    'voice': 'vocal',
+    'chant': 'vocal',
+    'breath': 'vocal',
+    
+    // World & Ethnic
+    'djembe': 'world',
+    'tabla': 'world',
+    'sitar': 'world',
+    'didgeridoo': 'world',
+    'flute': 'world',
+    
+    // Organic & Foley
+    'rain': 'organic',
+    'wind': 'organic',
+    'fire': 'organic',
+    'water': 'organic',
+    'footsteps': 'organic'
+};
+
+// Function to get category for a sound type
+function getCategoryForSoundType(soundType) {
+    return soundTypeCategories[soundType] || 'favorites';
+}
+
+function setupPromptBuilders() {
+    log('Setting up new prompt builder system...');
+    
+    // Sound type selection (single selection) - immediate response
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('sound-type-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Check if button is already being processed
+            if (e.target.dataset.processing === 'true') {
+                log('Sound type button click ignored - already processing');
+                return;
+            }
+            
+            // Mark as processing to prevent rapid clicks
+            e.target.dataset.processing = 'true';
+            
+            selectSoundType(e.target);
+            
+            // Reset processing flag after a short delay
+            setTimeout(() => {
+                e.target.dataset.processing = 'false';
+            }, 150);
+        }
+    });
+    
+    // Adjective selection (multi-selection) - immediate response
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('adjective-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Check if button is already being processed
+            if (e.target.dataset.processing === 'true') {
+                log('Adjective button click ignored - already processing');
+                return;
+            }
+            
+            // Mark as processing to prevent rapid clicks
+            e.target.dataset.processing = 'true';
+            
+            toggleAdjective(e.target);
+            
+            // Reset processing flag after a short delay
+            setTimeout(() => {
+                e.target.dataset.processing = 'false';
+            }, 150);
+        }
+    });
+    
+    // Musical options checkboxes
+    document.addEventListener('change', (e) => {
+        if (e.target.classList.contains('musical-checkbox')) {
+            updateMusicalOptions();
+        }
+    });
+    
+    // Builder action buttons
+    document.getElementById('build-prompt-btn').addEventListener('click', buildAndInsertPrompt);
+    document.getElementById('clear-prompt-btn').addEventListener('click', clearPromptOnly);
+    document.getElementById('clear-selection-btn').addEventListener('click', clearAllSelections);
+    
+    // Update current project values in display
+    updateProjectValueDisplays();
+    
+    log('New prompt builder system set up successfully');
+}
+
+function selectSoundType(button) {
+    const soundType = button.dataset.sound;
+    const isCurrentlySelected = button.classList.contains('selected');
+    
+    // Clear any existing inline styles and animations
+    button.style.background = '';
+    button.style.transform = '';
+    button.classList.remove('select-flash', 'deselect-flash');
+    
+    if (isCurrentlySelected) {
+        // Deselect if already selected
+        button.classList.remove('selected');
+        promptBuilder.selectedSoundType = null;
+        
+        // Visual feedback for deselection
+        button.classList.add('deselect-flash');
+        setTimeout(() => {
+            button.classList.remove('deselect-flash');
+        }, 300);
+        
+        log(`Deselected sound type: "${soundType}"`);
+    } else {
+        // Clear previous selection first
+        document.querySelectorAll('.sound-type-btn').forEach(btn => {
+            btn.classList.remove('selected', 'select-flash', 'deselect-flash');
+            btn.style.background = '';
+            btn.style.transform = '';
+        });
+        
+        // Select new sound type
+        button.classList.add('selected');
+        promptBuilder.selectedSoundType = soundType;
+        
+        // Visual feedback for selection
+        button.classList.add('select-flash');
+        setTimeout(() => {
+            button.classList.remove('select-flash');
+        }, 300);
+        
+        log(`Selected sound type: "${promptBuilder.selectedSoundType}"`);
+    }
+    
+    updatePromptPreview();
+}
+
+function toggleAdjective(button) {
+    const adjective = button.dataset.adjective;
+    const isCurrentlySelected = promptBuilder.selectedAdjectives.has(adjective);
+    
+    // Clear any existing inline styles and animations
+    button.style.background = '';
+    button.style.transform = '';
+    button.classList.remove('select-flash', 'deselect-flash');
+    
+    if (isCurrentlySelected) {
+        // Remove adjective
+        promptBuilder.selectedAdjectives.delete(adjective);
+        button.classList.remove('selected');
+        
+        // Visual feedback for removal
+        button.classList.add('deselect-flash');
+        setTimeout(() => {
+            button.classList.remove('deselect-flash');
+        }, 300);
+        
+        log(`Removed adjective: "${adjective}"`);
+    } else {
+        // Add adjective
+        promptBuilder.selectedAdjectives.add(adjective);
+        button.classList.add('selected');
+        
+        // Visual feedback for addition
+        button.classList.add('select-flash');
+        setTimeout(() => {
+            button.classList.remove('select-flash');
+        }, 300);
+        
+        log(`Added adjective: "${adjective}"`);
+    }
+    
+    updatePromptPreview();
+    log(`Current adjectives: [${Array.from(promptBuilder.selectedAdjectives).join(', ')}]`);
+}
+
+function updateMusicalOptions() {
+    promptBuilder.musicalOptions.includeKey = document.getElementById('include-project-key').checked;
+    promptBuilder.musicalOptions.includeTempo = document.getElementById('include-tempo').checked;
+    promptBuilder.musicalOptions.includeScale = document.getElementById('include-scale').checked;
+    
+    updatePromptPreview();
+    log(`Musical options: Key=${promptBuilder.musicalOptions.includeKey}, Tempo=${promptBuilder.musicalOptions.includeTempo}, Scale=${promptBuilder.musicalOptions.includeScale}`);
+}
+
+function updateProjectValueDisplays() {
+    // Get current project values from the control panel
+    const currentKey = document.getElementById('key')?.value || 'C';
+    const currentBPM = document.getElementById('bpm')?.value || '120';
+    const currentScale = document.getElementById('scale')?.value || 'major';
+    
+    // Update displays in the musical options
+    const keyDisplay = document.getElementById('current-key-display');
+    const bpmDisplay = document.getElementById('current-bpm-display');
+    const scaleDisplay = document.getElementById('current-scale-display');
+    
+    if (keyDisplay) keyDisplay.textContent = currentKey;
+    if (bpmDisplay) bpmDisplay.textContent = currentBPM;
+    if (scaleDisplay) scaleDisplay.textContent = currentScale;
+}
+
+function updatePromptPreview() {
+    const previewElement = document.getElementById('prompt-preview');
+    if (!previewElement) return;
+    
+    let preview = '';
+    
+    if (!promptBuilder.selectedSoundType) {
+        // Show adjectives only if no sound type selected
+        const adjectives = Array.from(promptBuilder.selectedAdjectives);
+        if (adjectives.length > 0) {
+            preview = adjectives.join(' ') + ' [select a sound type]';
+        } else {
+            preview = 'Select a sound type and adjectives';
+        }
+    } else {
+        // Start with adjectives
+        const adjectives = Array.from(promptBuilder.selectedAdjectives);
+        if (adjectives.length > 0) {
+            preview = adjectives.join(' ') + ' ';
+        }
+        
+        // Add sound type
+        preview += promptBuilder.selectedSoundType;
+        
+        // Add musical options
+        const musicalParts = [];
+        if (promptBuilder.musicalOptions.includeKey) {
+            const currentKey = document.getElementById('key')?.value || 'C';
+            musicalParts.push(`in ${currentKey}`);
+        }
+        if (promptBuilder.musicalOptions.includeScale) {
+            const currentScale = document.getElementById('scale')?.value || 'major';
+            musicalParts.push(`${currentScale} scale`);
+        }
+        if (promptBuilder.musicalOptions.includeTempo) {
+            const currentBPM = document.getElementById('bpm')?.value || '120';
+            musicalParts.push(`at ${currentBPM} BPM`);
+        }
+        
+        if (musicalParts.length > 0) {
+            preview += ' ' + musicalParts.join(' ');
+        }
+    }
+    
+    previewElement.textContent = preview;
+}
+
+function buildAndInsertPrompt() {
+    if (!promptBuilder.selectedSoundType) {
+        alert('Please select a sound type first!');
+        return;
+    }
+    
+    let prompt = '';
+    
+    // Start with adjectives
+    const adjectives = Array.from(promptBuilder.selectedAdjectives);
+    if (adjectives.length > 0) {
+        prompt = adjectives.join(' ') + ' ';
+    }
+    
+    // Add sound type
+    prompt += promptBuilder.selectedSoundType;
+    
+    // Add musical options
+    const musicalParts = [];
+    if (promptBuilder.musicalOptions.includeKey) {
+        const currentKey = document.getElementById('key')?.value || 'C';
+        musicalParts.push(`in ${currentKey}`);
+    }
+    if (promptBuilder.musicalOptions.includeScale) {
+        const currentScale = document.getElementById('scale')?.value || 'major';
+        musicalParts.push(`${currentScale} scale`);
+    }
+    if (promptBuilder.musicalOptions.includeTempo) {
+        const currentBPM = document.getElementById('bpm')?.value || '120';
+        musicalParts.push(`at ${currentBPM} BPM`);
+    }
+    
+    if (musicalParts.length > 0) {
+        prompt += ' ' + musicalParts.join(' ');
+    }
+    
+    // Replace the entire prompt (don't append)
+    insertPromptTextSilently(prompt);
+    
+    // Visual feedback on the build button
+    const buildBtn = document.getElementById('build-prompt-btn');
+    if (buildBtn) {
+        const originalText = buildBtn.textContent;
+        buildBtn.textContent = '✅ Prompt Built!';
+        buildBtn.style.background = 'linear-gradient(145deg, #26de81, #20c973)';
+        
+        setTimeout(() => {
+            buildBtn.textContent = originalText;
+            buildBtn.style.background = '';
+        }, 2000);
+    }
+    
+    // Scroll to the generate button instead
+    scrollToGenerateButton();
+    
+    log(`Built and replaced prompt: "${prompt}"`);
+}
+
+function insertPromptTextSilently(promptText) {
+    const promptTextarea = document.getElementById('sound-prompt');
+    if (!promptTextarea) {
+        log('ERROR: sound-prompt textarea not found');
+        return;
+    }
+    
+    // ALWAYS replace the entire prompt when building from prompt builder
+    // This ensures new prompts don't accumulate with old ones
+    promptTextarea.value = promptText;
+    
+    // DON'T focus the textarea to avoid keyboard popup and scrolling
+    // promptTextarea.focus(); // Removed this line
+    
+    log(`Replaced prompt text with: "${promptText}"`);
+}
+
+function scrollToGenerateButton() {
+    // Find the generate button and scroll it into view smoothly
+    const generateButton = document.getElementById('generate-sound');
+    if (generateButton) {
+        generateButton.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center',
+            inline: 'nearest'
+        });
+        
+        // Add a subtle highlight to draw attention to the generate button
+        generateButton.style.boxShadow = '0 0 20px rgba(74, 158, 255, 0.6)';
+        generateButton.style.transform = 'scale(1.05)';
+        
+        setTimeout(() => {
+            generateButton.style.boxShadow = '';
+            generateButton.style.transform = '';
+        }, 1500);
+        
+        log('Scrolled to generate button');
+    }
+}
+
+function clearPromptOnly() {
+    const promptTextarea = document.getElementById('sound-prompt');
+    if (promptTextarea) {
+        promptTextarea.value = '';
+        
+        // Visual feedback
+        const clearBtn = document.getElementById('clear-prompt-btn');
+        if (clearBtn) {
+            const originalText = clearBtn.textContent;
+            clearBtn.textContent = '✅ Cleared!';
+            clearBtn.style.background = 'linear-gradient(145deg, #26de81, #20c973)';
+            
+            setTimeout(() => {
+                clearBtn.textContent = originalText;
+                clearBtn.style.background = '';
+            }, 1500);
+        }
+        
+        log('Cleared prompt text only');
+    }
+}
+
+function clearAllSelections() {
+    // Clear sound type
+    document.querySelectorAll('.sound-type-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    promptBuilder.selectedSoundType = null;
+    
+    // Clear adjectives
+    document.querySelectorAll('.adjective-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    promptBuilder.selectedAdjectives.clear();
+    
+    // Clear musical options
+    document.querySelectorAll('.musical-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    promptBuilder.musicalOptions = {
+        includeKey: false,
+        includeTempo: false,
+        includeScale: false
+    };
+    
+    // Also clear the prompt text
+    clearPromptOnly();
+    
+    updatePromptPreview();
+    log('Cleared all prompt builder selections and prompt text');
+}
+
+function insertPromptText(promptText) {
+    const promptTextarea = document.getElementById('sound-prompt');
+    if (!promptTextarea) {
+        log('ERROR: sound-prompt textarea not found');
+        return;
+    }
+    
+    const currentText = promptTextarea.value.trim();
+    
+    if (currentText === '') {
+        // If empty, just set the new text
+        promptTextarea.value = promptText;
+    } else {
+        // If there's existing text, add with comma separator
+        promptTextarea.value = currentText + ', ' + promptText;
+    }
+    
+    // For manual insertions (not from prompt builder), still focus and position cursor
+    // This is used for any direct text insertions that aren't from the build button
+    promptTextarea.focus();
+    promptTextarea.setSelectionRange(promptTextarea.value.length, promptTextarea.value.length);
+    
+    log(`Inserted prompt text: "${promptText}"`);
+}

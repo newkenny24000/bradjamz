@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>8-Track Multi-Instrument Studio</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <canvas id="particleCanvas"></canvas>
+    
+    <!-- Instrument zones overlay -->
+    <div class="instrument-zones">
+        <div class="instrument-zone" data-track="0">
+            <select class="track-selector" data-track="0">
+                <option value="synth">Synth</option>
+                <option value="piano">Piano</option>
+                <option value="strings">Strings</option>
+                <option value="bells">Bells</option>
+                <option value="bass">Bass</option>
+                <option value="lead">Lead</option>
+                <option value="pad">Pad</option>
+                <option value="pluck">Pluck</option>
+                <option value="organ">Organ</option>
+                <option value="flute">Flute</option>
+                <option value="brass">Brass</option>
+                <option value="choir">Choir</option>
+            </select>
+            <div class="zone-label">TRACK 1</div>
+            <button class="sound-gen-btn" data-track="0" title="Generate sound from text">🎵</button>
+        </div>
+        <div class="instrument-zone" data-track="1">
+            <select class="track-selector" data-track="1">
+                <option value="piano" selected>Piano</option>
+                <option value="synth">Synth</option>
+                <option value="strings">Strings</option>
+                <option value="bells">Bells</option>
+                <option value="bass">Bass</option>
+                <option value="lead">Lead</option>
+                <option value="pad">Pad</option>
+                <option value="pluck">Pluck</option>
+                <option value="organ">Organ</option>
+                <option value="flute">Flute</option>
+                <option value="brass">Brass</option>
+                <option value="choir">Choir</option>
+            </select>
+            <div class="zone-label">TRACK 2</div>
+            <button class="sound-gen-btn" data-track="1" title="Generate sound from text">🎵</button>
+        </div>
+        <div class="instrument-zone" data-track="2">
+            <select class="track-selector" data-track="2">
+                <option value="strings" selected>Strings</option>
+                <option value="synth">Synth</option>
+                <option value="piano">Piano</option>
+                <option value="bells">Bells</option>
+                <option value="bass">Bass</option>
+                <option value="lead">Lead</option>
+                <option value="pad">Pad</option>
+                <option value="pluck">Pluck</option>
+                <option value="organ">Organ</option>
+                <option value="flute">Flute</option>
+                <option value="brass">Brass</option>
+                <option value="choir">Choir</option>
+            </select>
+            <div class="zone-label">TRACK 3</div>
+            <button class="sound-gen-btn" data-track="2" title="Generate sound from text">🎵</button>
+        </div>
+        <div class="instrument-zone" data-track="3">
+            <select class="track-selector" data-track="3">
+                <option value="bells" selected>Bells</option>
+                <option value="synth">Synth</option>
+                <option value="piano">Piano</option>
+                <option value="strings">Strings</option>
+                <option value="bass">Bass</option>
+                <option value="lead">Lead</option>
+                <option value="pad">Pad</option>
+                <option value="pluck">Pluck</option>
+                <option value="organ">Organ</option>
+                <option value="flute">Flute</option>
+                <option value="brass">Brass</option>
+                <option value="choir">Choir</option>
+            </select>
+            <div class="zone-label">TRACK 4</div>
+            <button class="sound-gen-btn" data-track="3" title="Generate sound from text">🎵</button>
+        </div>
+        <div class="instrument-zone" data-track="4">
+            <select class="track-selector" data-track="4">
+                <option value="pad" selected>Pad</option>
+                <option value="synth">Synth</option>
+                <option value="piano">Piano</option>
+                <option value="strings">Strings</option>
+                <option value="bells">Bells</option>
+                <option value="bass">Bass</option>
+                <option value="lead">Lead</option>
+                <option value="pluck">Pluck</option>
+                <option value="organ">Organ</option>
+                <option value="flute">Flute</option>
+                <option value="brass">Brass</option>
+                <option value="choir">Choir</option>
+            </select>
+            <div class="zone-label">TRACK 5</div>
+            <button class="sound-gen-btn" data-track="4" title="Generate sound from text">🎵</button>
+        </div>
+        <div class="instrument-zone" data-track="5">
+            <select class="track-selector" data-track="5">
+                <option value="lead" selected>Lead</option>
+                <option value="synth">Synth</option>
+                <option value="piano">Piano</option>
+                <option value="strings">Strings</option>
+                <option value="bells">Bells</option>
+                <option value="bass">Bass</option>
+                <option value="pad">Pad</option>
+                <option value="pluck">Pluck</option>
+                <option value="organ">Organ</option>
+                <option value="flute">Flute</option>
+                <option value="brass">Brass</option>
+                <option value="choir">Choir</option>
+            </select>
+            <div class="zone-label">TRACK 6</div>
+            <button class="sound-gen-btn" data-track="5" title="Generate sound from text">🎵</button>
+        </div>
+        <div class="instrument-zone" data-track="6">
+            <select class="track-selector" data-track="6">
+                <option value="pluck" selected>Pluck</option>
+                <option value="synth">Synth</option>
+                <option value="piano">Piano</option>
+                <option value="strings">Strings</option>
+                <option value="bells">Bells</option>
+                <option value="bass">Bass</option>
+                <option value="lead">Lead</option>
+                <option value="pad">Pad</option>
+                <option value="organ">Organ</option>
+                <option value="flute">Flute</option>
+                <option value="brass">Brass</option>
+                <option value="choir">Choir</option>
+            </select>
+            <div class="zone-label">TRACK 7</div>
+            <button class="sound-gen-btn" data-track="6" title="Generate sound from text">🎵</button>
+        </div>
+        <div class="instrument-zone" data-track="7">
+            <select class="track-selector" data-track="7">
+                <option value="bass" selected>Bass</option>
+                <option value="synth">Synth</option>
+                <option value="piano">Piano</option>
+                <option value="strings">Strings</option>
+                <option value="bells">Bells</option>
+                <option value="lead">Lead</option>
+                <option value="pad">Pad</option>
+                <option value="pluck">Pluck</option>
+                <option value="organ">Organ</option>
+                <option value="flute">Flute</option>
+                <option value="brass">Brass</option>
+                <option value="choir">Choir</option>
+            </select>
+            <div class="zone-label">TRACK 8</div>
+            <button class="sound-gen-btn" data-track="7" title="Generate sound from text">🎵</button>
+        </div>
+    </div>
+    
+    <div class="control-panel">
+        <div class="panel-header">
+            <h3>8-Track Studio Controls</h3>
+            <button id="collapse-btn">−</button>
+        </div>
+        
+        <div class="panel-content">
+            <div class="controls-row">
+                <div class="control-item">
+                    <label>Scale</label>
+                    <select id="scale">
+                        <option value="chromatic">Chromatic</option>
+                        <option value="major">Major</option>
+                        <option value="minor">Minor</option>
+                        <option value="pentatonic">Pentatonic</option>
+                        <option value="blues">Blues</option>
+                        <option value="arabic">Arabic</option>
+                        <option value="japanese">Japanese</option>
+                        <option value="wholetone">Whole Tone</option>
+                    </select>
+                </div>
+                
+                <div class="control-item">
+                    <label>Key</label>
+                    <select id="key">
+                        <option value="C">C</option>
+                        <option value="C#">C#</option>
+                        <option value="D">D</option>
+                        <option value="D#">D#</option>
+                        <option value="E">E</option>
+                        <option value="F">F</option>
+                        <option value="F#">F#</option>
+                        <option value="G">G</option>
+                        <option value="G#">G#</option>
+                        <option value="A">A</option>
+                        <option value="A#">A#</option>
+                        <option value="B">B</option>
+                    </select>
+                </div>
+                
+                <div class="control-item">
+                    <label>Base Octave</label>
+                    <input type="range" id="octave" min="1" max="6" value="3">
+                    <span id="octaveValue">3</span>
+                </div>
+                
+                <div class="control-item">
+                    <label>Decay</label>
+                    <input type="range" id="decay" min="0" max="100" value="10">
+                    <span id="decayValue">0.2s</span>
+                </div>
+            </div>
+            
+            <div class="effects-row">
+                <div class="effect-control">
+                    <label>Reverb</label>
+                    <input type="range" id="reverb" min="0" max="100" value="30">
+                </div>
+                <div class="effect-control">
+                    <label>Delay</label>
+                    <input type="range" id="delay" min="0" max="100" value="0">
+                </div>
+                <div class="effect-control">
+                    <label>Filter</label>
+                    <input type="range" id="filter" min="0" max="100" value="50">
+                </div>
+                <div class="effect-control">
+                    <label>Volume</label>
+                    <input type="range" id="volume" min="0" max="100" value="70">
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="record">● Record</button>
+                <button id="play">▶ Play</button>
+                <button id="clear">Clear</button>
+                <button id="preset">Presets</button>
+                <button id="panic">Stop All</button>
+                <button id="help">?</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="touch-indicators">
+        <!-- Touch indicators will be dynamically added here -->
+    </div>
+    
+    <div class="debug-panel">
+        <div class="debug-header">
+            <span>Debug Log</span>
+            <div class="debug-buttons">
+                <button id="copy-debug">Copy</button>
+                <button id="clear-debug">Clear</button>
+            </div>
+        </div>
+        <div id="debug-log"></div>
+    </div>
+    
+    <div class="preset-menu" style="display: none;">
+        <h3>Presets</h3>
+        <button class="preset-btn" data-preset="ambient">Ambient Layers</button>
+        <button class="preset-btn" data-preset="jazz">Jazz Ensemble</button>
+        <button class="preset-btn" data-preset="electronic">Electronic</button>
+        <button class="preset-btn" data-preset="orchestral">Orchestral</button>
+        <button class="preset-btn" data-preset="rockband">Rock Band</button>
+        <button class="preset-btn" data-preset="world">World Music</button>
+        <button class="preset-btn" data-preset="experimental">Experimental</button>
+        <button class="preset-btn" data-preset="close">Close</button>
+    </div>
+    
+    <div class="help-menu" style="display: none;">
+        <h3>How to Play</h3>
+        <p>• 8 tracks, each customizable</p>
+        <p>• Select instrument per track</p>
+        <p>• Touch horizontally for notes</p>
+        <p>• Play multiple tracks at once</p>
+        <p>• 12 different instruments!</p>
+        <button class="help-close">Got it!</button>
+    </div>
+    
+    <div class="recording-indicator" style="display: none;">
+        ● Recording...
+    </div>
+    
+    <!-- Sound Generation Modal -->
+    <div class="sound-gen-modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Generate Sound for <span id="track-number"></span></h3>
+            <div class="api-key-section">
+                <label>ElevenLabs API Key:</label>
+                <input type="password" id="elevenlabs-api-key" placeholder="Enter your API key">
+                <button id="save-api-key">Save</button>
+            </div>
+            <div class="sound-gen-section">
+                <label>Describe the sound you want:</label>
+                <textarea id="sound-prompt" placeholder="e.g., 'deep bass drum hit', 'ethereal choir ahh', 'laser synth zap'"></textarea>
+                <div class="gen-actions">
+                    <button id="generate-sound">Generate</button>
+                    <button id="cancel-gen">Cancel</button>
+                </div>
+                <div class="loading-indicator" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Generating sound...</p>
+                </div>
+            </div>
+            <div class="sound-mode-toggle">
+                <label>
+                    <input type="checkbox" id="use-sample-mode" data-track="">
+                    Use generated sample instead of synthesizer
+                </label>
+            </div>
+        </div>
+    </div>
+    
+    <script src="setup-api-key.js"></script>
+    <script src="debug.js"></script>
+    <script src="audio-engine.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

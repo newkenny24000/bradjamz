@@ -21,6 +21,9 @@ class ToneAudioEngine {
         this.sequence = null;
         this.isPlaying = false;
         
+        // Pending samples to load after initialization
+        this.pendingSamples = {};
+        
         log('ToneAudioEngine created');
     }
     
@@ -33,15 +36,26 @@ class ToneAudioEngine {
                 throw new Error('Tone.js library not loaded');
             }
             
+            // Log current audio context state
+            if (Tone.context) {
+                log(`Audio context state: ${Tone.context.state}`);
+            }
+            
             // Start Tone.js with timeout
             log('Starting Tone.js...');
-            const startPromise = Tone.start();
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error('Tone.js start timeout')), 5000);
-            });
-            
-            await Promise.race([startPromise, timeoutPromise]);
-            log('Tone.js started successfully');
+            try {
+                const startPromise = Tone.start();
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Tone.js start timeout - please check your browser audio permissions')), 10000);
+                });
+                
+                await Promise.race([startPromise, timeoutPromise]);
+                log('Tone.js started successfully');
+            } catch (timeoutError) {
+                log('Initial Tone.js start timed out, trying without timeout...');
+                await Tone.start();
+                log('Tone.js started successfully (without timeout)');
+            }
             
             // Set up master output
             this.masterGain = new Tone.Gain(0.7).toDestination();
@@ -160,9 +174,6 @@ class ToneAudioEngine {
         if (!this.isInitialized || !this.tracks || !this.tracks[trackIndex]) {
             log(`Audio engine not ready, storing sample for later: "${name}"`);
             // Store the sample info for when audio engine is ready
-            if (!this.pendingSamples) {
-                this.pendingSamples = {};
-            }
             this.pendingSamples[trackIndex] = { url, name };
             return;
         }
@@ -262,18 +273,19 @@ class ToneAudioEngine {
             // Set playback rate for pitch shifting
             track.player.playbackRate = playbackRate;
             
-            // Set volume - check if volume property exists
-            if (track.player.volume) {
-                track.player.volume.value = Tone.gainToDb(velocity);
+            // Set volume through the gain node
+            if (track.effects && track.effects.gain) {
+                track.effects.gain.gain.value = velocity;
             } else {
-                log(`WARNING: Track ${trackIndex + 1} player has no volume property`);
+                log(`WARNING: Track ${trackIndex + 1} has no gain control`);
             }
             
             // Start the player
             track.player.start();
             
             // Debug audio context and volume levels
-            log(`Audio context state: ${Tone.context.state}, Master volume: ${this.masterGain.volume.value}dB, Track volume: ${track.player.volume.value}dB`);
+            const trackVolume = track.effects && track.effects.gain ? track.effects.gain.gain.value : 'N/A';
+            log(`Audio context state: ${Tone.context.state}, Master volume: ${this.masterGain.gain.value}, Track volume: ${trackVolume}`);
             log(`Playing track ${trackIndex + 1}: pitch=${semitones} semitones, velocity=${velocity.toFixed(2)}, rate=${playbackRate.toFixed(2)}, state=${track.player.state}`);
             
             return {
@@ -476,7 +488,6 @@ class ToneAudioEngine {
             track.sampler.dispose();
             track.effects.reverb.dispose();
             track.effects.delay.dispose();
-            track.effects.filter.dispose();
             track.effects.gain.dispose();
         });
         

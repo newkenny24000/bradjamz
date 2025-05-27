@@ -187,6 +187,8 @@ function exportProject() {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+        
+        // Clean up blob URL to prevent memory leak
         URL.revokeObjectURL(url);
         
         log('Project exported:', currentProjectName);
@@ -750,6 +752,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         log('Application initialized successfully');
     } catch (error) {
         log('ERROR: Failed to initialize application:', error);
+        alert('Failed to initialize application. Error: ' + error.message);
     }
 });
 
@@ -1150,19 +1153,6 @@ function setupCanvas() {
 function setupControlPanel() {
     log('Setting up control panel...');
     
-    // Collapse/expand
-    document.getElementById('collapse-btn').addEventListener('click', () => {
-        const panel = document.querySelector('.panel-content');
-        const btn = document.getElementById('collapse-btn');
-        
-        if (panel.style.display === 'none') {
-            panel.style.display = 'block';
-            btn.textContent = '−';
-        } else {
-            panel.style.display = 'none';
-            btn.textContent = '+';
-        }
-    });
     
     // Scale and key controls
     document.getElementById('scale').addEventListener('change', (e) => {
@@ -1228,13 +1218,6 @@ function setupControlPanel() {
         if (audioEngine) {
             audioEngine.clearSequence();
             log('Sequence cleared');
-        }
-    });
-    
-    document.getElementById('panic2').addEventListener('click', () => {
-        if (audioEngine) {
-            audioEngine.panic();
-            log('Panic: All sounds stopped');
         }
     });
 }
@@ -2759,6 +2742,7 @@ async function initializeAudioOnce() {
         }
     } catch (error) {
         log('ERROR: Failed to initialize audio engine after user interaction:', error);
+        alert('Failed to initialize audio engine. Please refresh the page and try again.');
     }
 }
 

@@ -82,6 +82,634 @@ let endTime = 0;
 let isDragging = false;
 let dragTarget = null;
 
+// Project Save/Load functionality
+let currentProjectName = null;
+
+function saveProject(projectName = null) {
+    try {
+        // If no name provided, prompt for one
+        if (!projectName) {
+            projectName = prompt('Enter project name:', currentProjectName || `Project ${new Date().toLocaleString()}`);
+            if (!projectName) return; // User cancelled
+        }
+        
+        const projectState = {
+            version: "1.0",
+            name: projectName,
+            timestamp: new Date().toISOString(),
+            
+            // Beat sequencer state
+            beatSequencer: {
+                patternLength: beatSequencer.patternLength,
+                sequence: beatSequencer.sequence,
+                stepNotes: beatSequencer.stepNotes,
+                muted: beatSequencer.muted,
+                solo: beatSequencer.solo,
+                volumes: beatSequencer.volumes,
+                swing: beatSequencer.swing
+            },
+            
+            // Project settings
+            projectSettings: {
+                bpm: document.getElementById('bpm')?.value || '120',
+                scale: document.getElementById('scale')?.value || 'major',
+                key: document.getElementById('key')?.value || 'C',
+                octave: document.getElementById('octave')?.value || '3'
+            },
+            
+            // Track effects for all 8 tracks
+            trackEffects: {},
+            
+            // Track sound assignments
+            trackSounds: {},
+            
+            // Sound library (only user-generated sounds)
+            soundLibrary: soundLibrary
+        };
+        
+        // Capture track effects and sound assignments
+        for (let i = 0; i < 8; i++) {
+            projectState.trackEffects[i] = {
+                reverb: document.querySelector(`.track-reverb[data-track="${i}"]`)?.value || '0',
+                delay: document.querySelector(`.track-delay[data-track="${i}"]`)?.value || '0',
+                volume: document.querySelector(`.track-volume[data-track="${i}"]`)?.value || '70',
+                decay: document.querySelector(`.track-decay[data-track="${i}"]`)?.value || '0'
+            };
+            
+            const soundSelector = document.querySelector(`.sound-selector[data-track="${i}"]`);
+            projectState.trackSounds[i] = soundSelector?.value || '';
+        }
+        
+        // Save to localStorage
+        const savedProjects = JSON.parse(localStorage.getItem('bradjamzProjects')) || {};
+        savedProjects[projectName] = projectState;
+        localStorage.setItem('bradjamzProjects', JSON.stringify(savedProjects));
+        
+        currentProjectName = projectName;
+        updateProjectNameDisplay();
+        
+        log('Project saved to localStorage:', projectName);
+        showCustomMessage(`Project "${projectName}" saved successfully!`, 'success');
+    } catch (error) {
+        log('ERROR saving project:', error);
+        showCustomMessage('Error saving project: ' + error.message, 'error');
+    }
+}
+
+function saveProjectAs() {
+    const newName = prompt('Save project as:', currentProjectName ? `${currentProjectName} (Copy)` : `Project ${new Date().toLocaleString()}`);
+    if (newName) {
+        saveProject(newName);
+    }
+}
+
+function exportProject() {
+    if (!currentProjectName) {
+        showCustomMessage('No project to export. Save a project first.', 'error');
+        return;
+    }
+    
+    try {
+        const savedProjects = JSON.parse(localStorage.getItem('bradjamzProjects')) || {};
+        const projectData = savedProjects[currentProjectName];
+        
+        if (!projectData) {
+            showCustomMessage('Project not found in localStorage', 'error');
+            return;
+        }
+        
+        const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentProjectName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        log('Project exported:', currentProjectName);
+        showCustomMessage(`Project "${currentProjectName}" exported successfully!`, 'success');
+    } catch (error) {
+        log('ERROR exporting project:', error);
+        showCustomMessage('Error exporting project: ' + error.message, 'error');
+    }
+}
+
+function loadProject(projectNameOrFile) {
+    try {
+        if (typeof projectNameOrFile === 'string') {
+            // Loading from localStorage
+            const savedProjects = JSON.parse(localStorage.getItem('bradjamzProjects')) || {};
+            const projectState = savedProjects[projectNameOrFile];
+            
+            if (!projectState) {
+                showCustomMessage('Project not found', 'error');
+                return;
+            }
+            
+            loadProjectState(projectState);
+            currentProjectName = projectNameOrFile;
+            updateProjectNameDisplay();
+            
+        } else {
+            // Loading from file
+            const file = projectNameOrFile;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const projectState = JSON.parse(e.target.result);
+                    loadProjectState(projectState);
+                    currentProjectName = projectState.name || 'Imported Project';
+                    updateProjectNameDisplay();
+                    
+                } catch (parseError) {
+                    log('ERROR parsing project file:', parseError);
+                    showCustomMessage('Error loading project: Invalid file format', 'error');
+                }
+            };
+            
+            reader.onerror = function() {
+                log('ERROR reading project file');
+                showCustomMessage('Error reading project file', 'error');
+            };
+            
+            reader.readAsText(file);
+        }
+    } catch (error) {
+        log('ERROR loading project:', error);
+        showCustomMessage('Error loading project: ' + error.message, 'error');
+    }
+}
+
+function loadProjectState(projectState) {
+    log('Loading project version:', projectState.version);
+    
+    // Restore beat sequencer state
+    if (projectState.beatSequencer) {
+        beatSequencer.patternLength = projectState.beatSequencer.patternLength || 16;
+        beatSequencer.sequence = projectState.beatSequencer.sequence || {};
+        beatSequencer.stepNotes = projectState.beatSequencer.stepNotes || {};
+        beatSequencer.muted = projectState.beatSequencer.muted || {};
+        beatSequencer.solo = projectState.beatSequencer.solo || {};
+        beatSequencer.volumes = projectState.beatSequencer.volumes || {};
+        beatSequencer.swing = projectState.beatSequencer.swing || 0;
+        
+        // Update pattern length UI
+        const patternLengthSelect = document.getElementById('pattern-length');
+        if (patternLengthSelect) {
+            patternLengthSelect.value = beatSequencer.patternLength;
+        }
+        
+        // Update swing UI
+        const swingControl = document.getElementById('swing-control');
+        const swingValue = document.getElementById('swing-value');
+        if (swingControl && swingValue) {
+            swingControl.value = beatSequencer.swing;
+            swingValue.textContent = beatSequencer.swing + '%';
+        }
+        
+        // Rebuild sequencer UI
+        rebuildSequencerGrid();
+        updateSequencerFromState();
+    }
+    
+    // Restore project settings
+    if (projectState.projectSettings) {
+        const settings = projectState.projectSettings;
+        
+        const bpmSlider = document.getElementById('bpm');
+        const bpmValue = document.getElementById('bpmValue');
+        if (bpmSlider && bpmValue) {
+            bpmSlider.value = settings.bpm;
+            bpmValue.textContent = settings.bpm;
+            if (audioEngine) audioEngine.setBPM(parseInt(settings.bpm));
+        }
+        
+        const scaleSelect = document.getElementById('scale');
+        if (scaleSelect) {
+            scaleSelect.value = settings.scale;
+            if (audioEngine) audioEngine.setScale(settings.scale);
+        }
+        
+        const keySelect = document.getElementById('key');
+        if (keySelect) {
+            keySelect.value = settings.key;
+            if (audioEngine) audioEngine.setKey(settings.key);
+        }
+        
+        const octaveSlider = document.getElementById('octave');
+        const octaveValue = document.getElementById('octaveValue');
+        if (octaveSlider && octaveValue) {
+            octaveSlider.value = settings.octave;
+            octaveValue.textContent = settings.octave;
+            if (audioEngine) audioEngine.setOctave(parseInt(settings.octave));
+        }
+    }
+    
+    // Restore track effects
+    if (projectState.trackEffects) {
+        for (let trackIndex = 0; trackIndex < 8; trackIndex++) {
+            const effects = projectState.trackEffects[trackIndex];
+            if (effects) {
+                ['reverb', 'delay', 'volume', 'decay'].forEach(effect => {
+                    const slider = document.querySelector(`.track-${effect}[data-track="${trackIndex}"]`);
+                    const valueSpan = slider?.parentElement.querySelector('.effect-value');
+                    if (slider && effects[effect] !== undefined) {
+                        slider.value = effects[effect];
+                        if (valueSpan) valueSpan.textContent = effects[effect];
+                        if (audioEngine) {
+                            audioEngine.updateTrackEffect(trackIndex, effect, parseInt(effects[effect]));
+                        }
+                    }
+                });
+            }
+        }
+    }
+    
+    // Restore sound library
+    if (projectState.soundLibrary) {
+        soundLibrary = projectState.soundLibrary;
+        saveSoundLibrary();
+        loadSoundLibrary();
+    }
+    
+    // Restore track sound assignments
+    if (projectState.trackSounds) {
+        for (let trackIndex = 0; trackIndex < 8; trackIndex++) {
+            const soundId = projectState.trackSounds[trackIndex];
+            const soundSelector = document.querySelector(`.sound-selector[data-track="${trackIndex}"]`);
+            if (soundSelector && soundId) {
+                soundSelector.value = soundId;
+                // Trigger change event to load the sound
+                soundSelector.dispatchEvent(new Event('change'));
+            }
+        }
+    }
+    
+    log('Project loaded successfully');
+    showCustomMessage(`Project "${projectState.name || 'Unknown'}" loaded successfully!`, 'success');
+}
+
+function deleteProject(projectName) {
+    if (confirm(`Delete project "${projectName}"? This cannot be undone.`)) {
+        try {
+            const savedProjects = JSON.parse(localStorage.getItem('bradjamzProjects')) || {};
+            delete savedProjects[projectName];
+            localStorage.setItem('bradjamzProjects', JSON.stringify(savedProjects));
+            
+            if (currentProjectName === projectName) {
+                currentProjectName = null;
+                updateProjectNameDisplay();
+            }
+            
+            log('Project deleted:', projectName);
+            showCustomMessage(`Project "${projectName}" deleted`, 'success');
+            
+            // Refresh project list if modal is open
+            if (document.getElementById('project-manager-modal').style.display !== 'none') {
+                displayProjectList();
+            }
+        } catch (error) {
+            log('ERROR deleting project:', error);
+            showCustomMessage('Error deleting project: ' + error.message, 'error');
+        }
+    }
+}
+
+function renameProject(oldName) {
+    const newName = prompt('Enter new name:', oldName);
+    if (newName && newName !== oldName) {
+        try {
+            const savedProjects = JSON.parse(localStorage.getItem('bradjamzProjects')) || {};
+            
+            if (savedProjects[newName]) {
+                showCustomMessage('Project with that name already exists', 'error');
+                return;
+            }
+            
+            // Copy project with new name
+            savedProjects[newName] = { ...savedProjects[oldName], name: newName };
+            delete savedProjects[oldName];
+            localStorage.setItem('bradjamzProjects', JSON.stringify(savedProjects));
+            
+            if (currentProjectName === oldName) {
+                currentProjectName = newName;
+                updateProjectNameDisplay();
+            }
+            
+            log('Project renamed:', oldName, '->', newName);
+            showCustomMessage(`Project renamed to "${newName}"`, 'success');
+            
+            // Refresh project list if modal is open
+            if (document.getElementById('project-manager-modal').style.display !== 'none') {
+                displayProjectList();
+            }
+        } catch (error) {
+            log('ERROR renaming project:', error);
+            showCustomMessage('Error renaming project: ' + error.message, 'error');
+        }
+    }
+}
+
+function newProject() {
+    if (!currentProjectName || confirm('Start new project? Unsaved changes will be lost.')) {
+        // Reset everything to defaults
+        currentProjectName = null;
+        updateProjectNameDisplay();
+        
+        // Reset sequencer
+        for (let i = 0; i < 8; i++) {
+            beatSequencer.sequence[i] = new Array(16).fill(false);
+            beatSequencer.stepNotes[i] = {};
+            beatSequencer.muted[i] = false;
+            beatSequencer.solo[i] = false;
+            beatSequencer.volumes[i] = 70;
+        }
+        beatSequencer.patternLength = 16;
+        beatSequencer.swing = 0;
+        
+        // Reset UI
+        rebuildSequencerGrid();
+        updateSequencerFromState();
+        
+        // Reset project settings
+        document.getElementById('bpm').value = 120;
+        document.getElementById('bpmValue').textContent = 120;
+        document.getElementById('scale').value = 'major';
+        document.getElementById('key').value = 'C';
+        document.getElementById('octave').value = 3;
+        document.getElementById('octaveValue').textContent = 3;
+        
+        // Reset track effects
+        for (let i = 0; i < 8; i++) {
+            const effects = ['reverb', 'delay', 'volume', 'decay'];
+            const defaults = { reverb: 0, delay: 0, volume: 70, decay: 0 };
+            
+            effects.forEach(effect => {
+                const slider = document.querySelector(`.track-${effect}[data-track="${i}"]`);
+                const valueSpan = slider?.parentElement.querySelector('.effect-value');
+                if (slider) {
+                    slider.value = defaults[effect];
+                    if (valueSpan) valueSpan.textContent = defaults[effect];
+                }
+            });
+        }
+        
+        showCustomMessage('New project created', 'success');
+        log('New project created');
+    }
+}
+
+function updateProjectNameDisplay() {
+    const titleElement = document.querySelector('.sequencer-title h3');
+    if (titleElement) {
+        titleElement.textContent = currentProjectName ? `Beat Sequencer - ${currentProjectName}` : 'Beat Sequencer';
+    }
+}
+
+// Project Manager Functions
+function openProjectManager() {
+    const modal = document.getElementById('project-manager-modal');
+    modal.style.display = 'flex';
+    displayProjectList();
+    updateStorageInfo();
+    log('Project manager opened');
+}
+
+function closeProjectManager() {
+    const modal = document.getElementById('project-manager-modal');
+    modal.style.display = 'none';
+    log('Project manager closed');
+}
+
+function displayProjectList() {
+    const projectsList = document.getElementById('projects-list');
+    const savedProjects = JSON.parse(localStorage.getItem('bradjamzProjects')) || {};
+    
+    if (Object.keys(savedProjects).length === 0) {
+        projectsList.innerHTML = '<div class="no-projects">No saved projects found. Create your first project!</div>';
+        return;
+    }
+    
+    // Sort projects by last modified (newest first)
+    const sortedProjects = Object.entries(savedProjects).sort((a, b) => {
+        const dateA = new Date(a[1].timestamp);
+        const dateB = new Date(b[1].timestamp);
+        return dateB - dateA;
+    });
+    
+    projectsList.innerHTML = '';
+    
+    sortedProjects.forEach(([projectName, projectData]) => {
+        const projectItem = document.createElement('div');
+        projectItem.className = 'project-item';
+        if (currentProjectName === projectName) {
+            projectItem.classList.add('current-project');
+        }
+        
+        const lastModified = new Date(projectData.timestamp).toLocaleString();
+        
+        projectItem.innerHTML = `
+            <div class="project-info">
+                <div class="project-name">${projectName}</div>
+                <div class="project-meta">
+                    <span class="project-date">${lastModified}</span>
+                    <span class="project-version">v${projectData.version}</span>
+                </div>
+            </div>
+            <div class="project-actions">
+                <button class="project-btn load-btn" onclick="loadProjectFromManager('${projectName}')">Load</button>
+                <button class="project-btn rename-btn" onclick="renameProject('${projectName}')">Rename</button>
+                <button class="project-btn export-btn" onclick="exportProjectFromManager('${projectName}')">Export</button>
+                <button class="project-btn delete-btn" onclick="deleteProject('${projectName}')">Delete</button>
+            </div>
+        `;
+        
+        projectsList.appendChild(projectItem);
+    });
+    
+    log(`Displayed ${sortedProjects.length} projects`);
+}
+
+function loadProjectFromManager(projectName) {
+    try {
+        loadProject(projectName);
+        closeProjectManager();
+    } catch (error) {
+        log('ERROR loading project from manager:', error);
+        showCustomMessage('Error loading project: ' + error.message, 'error');
+    }
+}
+
+function exportProjectFromManager(projectName) {
+    try {
+        const savedProjects = JSON.parse(localStorage.getItem('bradjamzProjects')) || {};
+        const projectData = savedProjects[projectName];
+        
+        if (!projectData) {
+            showCustomMessage('Project not found', 'error');
+            return;
+        }
+        
+        const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        log('Project exported from manager:', projectName);
+        showCustomMessage(`Project "${projectName}" exported successfully!`, 'success');
+    } catch (error) {
+        log('ERROR exporting project from manager:', error);
+        showCustomMessage('Error exporting project: ' + error.message, 'error');
+    }
+}
+
+function updateStorageInfo() {
+    const storageInfo = document.getElementById('storage-info');
+    
+    try {
+        const savedProjects = JSON.parse(localStorage.getItem('bradjamzProjects')) || {};
+        const projectCount = Object.keys(savedProjects).length;
+        
+        // Estimate storage usage
+        const projectsData = JSON.stringify(savedProjects);
+        const soundLibraryData = JSON.stringify(soundLibrary);
+        const totalSize = new Blob([projectsData + soundLibraryData]).size;
+        const sizeInKB = Math.round(totalSize / 1024);
+        
+        storageInfo.innerHTML = `
+            <span>${projectCount} project${projectCount !== 1 ? 's' : ''} saved</span>
+            <span>•</span>
+            <span>~${sizeInKB} KB used</span>
+        `;
+    } catch (error) {
+        storageInfo.innerHTML = '<span>Storage info unavailable</span>';
+        log('ERROR updating storage info:', error);
+    }
+}
+
+// Helper functions for project loading
+function rebuildSequencerGrid() {
+    log('Rebuilding sequencer grid with pattern length:', beatSequencer.patternLength);
+    
+    // Update pattern length dropdown
+    const patternLengthSelect = document.getElementById('pattern-length');
+    if (patternLengthSelect) {
+        patternLengthSelect.value = beatSequencer.patternLength;
+    }
+    
+    // Clear existing steps
+    document.querySelectorAll('.seq-steps').forEach(stepsContainer => {
+        stepsContainer.innerHTML = '';
+    });
+    
+    // Rebuild step numbers
+    const stepNumbers = document.querySelector('.step-numbers');
+    if (stepNumbers) {
+        stepNumbers.innerHTML = '';
+        for (let i = 0; i < beatSequencer.patternLength; i++) {
+            const stepNum = document.createElement('div');
+            stepNum.className = 'step-number';
+            stepNum.textContent = i + 1;
+            stepNumbers.appendChild(stepNum);
+        }
+    }
+    
+    // Rebuild steps for each track
+    document.querySelectorAll('.seq-track').forEach((track, trackIndex) => {
+        const stepsContainer = track.querySelector('.seq-steps');
+        if (stepsContainer) {
+            for (let stepIndex = 0; stepIndex < beatSequencer.patternLength; stepIndex++) {
+                const stepBtn = document.createElement('button');
+                stepBtn.className = 'seq-step';
+                stepBtn.dataset.track = trackIndex;
+                stepBtn.dataset.step = stepIndex;
+                
+                // Add event listeners for step interaction
+                stepBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    toggleStep(trackIndex, stepIndex);
+                });
+                
+                stepBtn.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    adjustStepPitch(trackIndex, stepIndex);
+                });
+                
+                stepsContainer.appendChild(stepBtn);
+            }
+        }
+    });
+    
+    log('Sequencer grid rebuilt successfully');
+}
+
+function updateSequencerFromState() {
+    log('Updating sequencer UI from state...');
+    
+    // Update step buttons based on sequence state
+    for (let trackIndex = 0; trackIndex < 8; trackIndex++) {
+        const sequence = beatSequencer.sequence[trackIndex] || [];
+        const stepNotes = beatSequencer.stepNotes[trackIndex] || {};
+        
+        // Ensure sequence array has correct length
+        while (sequence.length < beatSequencer.patternLength) {
+            sequence.push(false);
+        }
+        
+        for (let stepIndex = 0; stepIndex < beatSequencer.patternLength; stepIndex++) {
+            const stepBtn = document.querySelector(`[data-track="${trackIndex}"][data-step="${stepIndex}"]`);
+            if (stepBtn) {
+                const isActive = sequence[stepIndex];
+                stepBtn.classList.toggle('active', isActive);
+                
+                // Update pitch indication if step has custom pitch
+                if (stepNotes[stepIndex] !== undefined) {
+                    const semitones = stepNotes[stepIndex];
+                    stepBtn.style.backgroundColor = getPitchColor(semitones);
+                    stepBtn.title = `Step ${stepIndex + 1} (${semitones > 0 ? '+' : ''}${semitones} semitones)`;
+                } else {
+                    stepBtn.style.backgroundColor = '';
+                    stepBtn.title = `Step ${stepIndex + 1}`;
+                }
+            }
+        }
+        
+        // Update track controls
+        const muteBtn = document.querySelector(`.seq-track-mute[data-track="${trackIndex}"]`);
+        const soloBtn = document.querySelector(`.seq-track-solo[data-track="${trackIndex}"]`);
+        const volumeSlider = document.querySelector(`.seq-track-volume[data-track="${trackIndex}"]`);
+        
+        if (muteBtn) {
+            muteBtn.classList.toggle('active', beatSequencer.muted[trackIndex]);
+        }
+        
+        if (soloBtn) {
+            soloBtn.classList.toggle('active', beatSequencer.solo[trackIndex]);
+        }
+        
+        if (volumeSlider && beatSequencer.volumes[trackIndex] !== undefined) {
+            volumeSlider.value = beatSequencer.volumes[trackIndex];
+        }
+    }
+    
+    log('Sequencer UI updated from state');
+}
+
+function getPitchColor(semitones) {
+    // Generate a color based on pitch offset
+    const hue = (semitones * 15 + 180) % 360; // Spread colors around the hue wheel
+    return `hsl(${hue}, 70%, 50%)`;
+}
+
 // Initialize application
 document.addEventListener('DOMContentLoaded', async () => {
     log('Initializing 8-Track Studio...');
@@ -186,7 +814,7 @@ function setupTrackControls() {
 
 // Effect Sliders Setup
 function setupEffectSliders() {
-    const effects = ['reverb', 'delay', 'filter', 'volume', 'decay'];
+    const effects = ['reverb', 'delay', 'volume', 'decay'];
     
     effects.forEach(effect => {
         document.querySelectorAll(`.track-${effect}`).forEach(slider => {
@@ -326,6 +954,96 @@ function setupMenuBar() {
         log('ERROR: sounds-btn element not found');
     }
     
+    // New Project button
+    const newProjectBtn = document.getElementById('new-project-btn');
+    if (newProjectBtn) {
+        newProjectBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            log('New project button clicked');
+            newProject();
+        });
+    }
+    
+    // Save Project button
+    const saveProjectBtn = document.getElementById('save-project-btn');
+    if (saveProjectBtn) {
+        log('Setting up save project button');
+        saveProjectBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            log('Save project button clicked');
+            try {
+                saveProject();
+            } catch (error) {
+                log('ERROR saving project:', error);
+            }
+        });
+    } else {
+        log('ERROR: save-project-btn element not found');
+    }
+    
+    // Save As button
+    const saveAsBtn = document.getElementById('save-as-btn');
+    if (saveAsBtn) {
+        saveAsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            log('Save as button clicked');
+            saveProjectAs();
+        });
+    }
+    
+    // Projects button (opens project manager)
+    const projectsBtn = document.getElementById('projects-btn');
+    if (projectsBtn) {
+        projectsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            log('Projects button clicked');
+            openProjectManager();
+        });
+    }
+    
+    // Import Project button
+    const importBtn = document.getElementById('import-btn');
+    const importProjectInput = document.getElementById('import-project-input');
+    if (importBtn && importProjectInput) {
+        log('Setting up import project button');
+        importBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            log('Import project button clicked');
+            importProjectInput.click();
+        });
+        
+        importProjectInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                log('Project file selected for import:', file.name);
+                try {
+                    loadProject(file);
+                } catch (error) {
+                    log('ERROR importing project:', error);
+                }
+                // Reset the input so the same file can be loaded again
+                e.target.value = '';
+            }
+        });
+    } else {
+        log('ERROR: import-btn or import-project-input element not found');
+    }
+    
+    // Export Project button
+    const exportBtn = document.getElementById('export-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            log('Export project button clicked');
+            exportProject();
+        });
+    }
     
     // Panic button
     document.getElementById('panic').addEventListener('click', () => {
@@ -704,6 +1422,21 @@ function setupModals() {
         openSoundGenerationModal(selectedTrack);
     });
     
+    // Project manager modal
+    document.getElementById('close-project-manager').addEventListener('click', () => {
+        closeProjectManager();
+    });
+    
+    document.getElementById('new-project-from-manager').addEventListener('click', () => {
+        newProject();
+        closeProjectManager();
+    });
+    
+    document.getElementById('refresh-projects').addEventListener('click', () => {
+        displayProjectList();
+        updateStorageInfo();
+    });
+    
     document.getElementById('add-category-btn').addEventListener('click', () => {
         const categoryName = prompt('Enter new category name:');
         if (categoryName) {
@@ -724,6 +1457,21 @@ function setupModals() {
 // Debug Panel Setup
 function setupDebugPanel() {
     log('Setting up debug panel...');
+    
+    document.getElementById('toggle-debug').addEventListener('click', () => {
+        const debugPanel = document.querySelector('.debug-panel');
+        const toggleBtn = document.getElementById('toggle-debug');
+        
+        if (debugPanel.classList.contains('collapsed')) {
+            debugPanel.classList.remove('collapsed');
+            toggleBtn.textContent = 'Hide';
+            log('Debug panel expanded');
+        } else {
+            debugPanel.classList.add('collapsed');
+            toggleBtn.textContent = 'Show';
+            log('Debug panel collapsed');
+        }
+    });
     
     document.getElementById('copy-debug').addEventListener('click', () => {
         const debugLog = document.getElementById('debug-log');

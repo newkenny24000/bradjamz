@@ -108,15 +108,10 @@ class ToneAudioEngine {
             wet: 0 // Already disabled
         });
         
-        const filter = new Tone.Filter({
-            frequency: 2000,
-            type: 'lowpass'
-        });
-        
         const gain = new Tone.Gain(0.7);
         
         // Connect chain for processed audio
-        player.chain(filter, delay, reverb, gain, this.masterGain);
+        player.chain(delay, reverb, gain, this.masterGain);
         
         // Create a direct bypass player for original sound
         const bypassPlayer = new Tone.Player().toDestination();
@@ -136,7 +131,7 @@ class ToneAudioEngine {
                 log(`Track ${index + 1} sampler ready for sequencer`);
             }
         });
-        sampler.chain(filter, delay, reverb, gain, this.masterGain);
+        sampler.chain(delay, reverb, gain, this.masterGain);
         
         return {
             player: player,
@@ -145,7 +140,6 @@ class ToneAudioEngine {
             effects: {
                 reverb: reverb,
                 delay: delay,
-                filter: filter,
                 gain: gain
             },
             sample: null,
@@ -321,10 +315,6 @@ class ToneAudioEngine {
                 break;
             case 'delay':
                 track.effects.delay.wet.value = normalizedValue * 0.6;
-                break;
-            case 'filter':
-                const freq = 200 + (normalizedValue * 4800);
-                track.effects.filter.frequency.value = freq;
                 break;
             case 'volume':
                 track.effects.gain.gain.value = normalizedValue;

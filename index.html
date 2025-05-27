@@ -34,11 +34,6 @@
                     <span class="effect-value">0</span>
                 </div>
                 <div class="effect-control">
-                    <label>Filter</label>
-                    <input type="range" class="track-filter" data-track="0" min="0" max="100" value="0">
-                    <span class="effect-value">50</span>
-                </div>
-                <div class="effect-control">
                     <label>Volume</label>
                     <input type="range" class="track-volume" data-track="0" min="0" max="100" value="70">
                     <span class="effect-value">70</span>
@@ -71,11 +66,6 @@
                     <label>Delay</label>
                     <input type="range" class="track-delay" data-track="1" min="0" max="100" value="0">
                     <span class="effect-value">0</span>
-                </div>
-                <div class="effect-control">
-                    <label>Filter</label>
-                    <input type="range" class="track-filter" data-track="1" min="0" max="100" value="0">
-                    <span class="effect-value">50</span>
                 </div>
                 <div class="effect-control">
                     <label>Volume</label>
@@ -112,11 +102,6 @@
                     <span class="effect-value">0</span>
                 </div>
                 <div class="effect-control">
-                    <label>Filter</label>
-                    <input type="range" class="track-filter" data-track="2" min="0" max="100" value="0">
-                    <span class="effect-value">50</span>
-                </div>
-                <div class="effect-control">
                     <label>Volume</label>
                     <input type="range" class="track-volume" data-track="2" min="0" max="100" value="70">
                     <span class="effect-value">70</span>
@@ -149,11 +134,6 @@
                     <label>Delay</label>
                     <input type="range" class="track-delay" data-track="3" min="0" max="100" value="0">
                     <span class="effect-value">0</span>
-                </div>
-                <div class="effect-control">
-                    <label>Filter</label>
-                    <input type="range" class="track-filter" data-track="3" min="0" max="100" value="0">
-                    <span class="effect-value">50</span>
                 </div>
                 <div class="effect-control">
                     <label>Volume</label>
@@ -190,11 +170,6 @@
                     <span class="effect-value">0</span>
                 </div>
                 <div class="effect-control">
-                    <label>Filter</label>
-                    <input type="range" class="track-filter" data-track="4" min="0" max="100" value="0">
-                    <span class="effect-value">50</span>
-                </div>
-                <div class="effect-control">
                     <label>Volume</label>
                     <input type="range" class="track-volume" data-track="4" min="0" max="100" value="70">
                     <span class="effect-value">70</span>
@@ -227,11 +202,6 @@
                     <label>Delay</label>
                     <input type="range" class="track-delay" data-track="5" min="0" max="100" value="0">
                     <span class="effect-value">0</span>
-                </div>
-                <div class="effect-control">
-                    <label>Filter</label>
-                    <input type="range" class="track-filter" data-track="5" min="0" max="100" value="0">
-                    <span class="effect-value">50</span>
                 </div>
                 <div class="effect-control">
                     <label>Volume</label>
@@ -268,11 +238,6 @@
                     <span class="effect-value">0</span>
                 </div>
                 <div class="effect-control">
-                    <label>Filter</label>
-                    <input type="range" class="track-filter" data-track="6" min="0" max="100" value="0">
-                    <span class="effect-value">50</span>
-                </div>
-                <div class="effect-control">
                     <label>Volume</label>
                     <input type="range" class="track-volume" data-track="6" min="0" max="100" value="70">
                     <span class="effect-value">70</span>
@@ -307,11 +272,6 @@
                     <span class="effect-value">0</span>
                 </div>
                 <div class="effect-control">
-                    <label>Filter</label>
-                    <input type="range" class="track-filter" data-track="7" min="0" max="100" value="0">
-                    <span class="effect-value">50</span>
-                </div>
-                <div class="effect-control">
                     <label>Volume</label>
                     <input type="range" class="track-volume" data-track="7" min="0" max="100" value="70">
                     <span class="effect-value">70</span>
@@ -327,9 +287,15 @@
     
     <!-- Top Menu Bar -->
     <div class="top-menu">
-        <button class="menu-item" id="sounds-btn">Sound Library</button>
+        <button class="menu-item" id="new-project-btn">New</button>
+        <button class="menu-item" id="save-project-btn">Save</button>
+        <button class="menu-item" id="save-as-btn">Save As</button>
+        <button class="menu-item" id="projects-btn">Projects</button>
+        <button class="menu-item" id="import-btn">Import</button>
+        <button class="menu-item" id="export-btn">Export</button>
+        <input type="file" id="import-project-input" accept=".json" style="display: none;">
+        <button class="menu-item" id="sounds-btn">Sounds</button>
         <button class="menu-item" id="panic">Stop All</button>
-        <button class="menu-item" id="test-sound-gen">Test Sound Gen</button>
     </div>
     
     <!-- Canvas for particle effects -->
@@ -425,6 +391,7 @@
         <div class="debug-header">
             <span>Debug Log</span>
             <div class="debug-buttons">
+                <button id="toggle-debug">Hide</button>
                 <button id="copy-debug">Copy</button>
                 <button id="clear-debug">Clear</button>
             </div>
@@ -903,6 +870,35 @@
                 <button class="track-picker-btn" data-track="5">Track 6</button>
                 <button class="track-picker-btn" data-track="6">Track 7</button>
                 <button class="track-picker-btn" data-track="7">Track 8</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Project Manager Modal -->
+    <div id="project-manager-modal" class="modal" style="display: none;">
+        <div class="modal-content project-manager-content">
+            <div class="modal-header">
+                <h2>Project Manager</h2>
+                <button class="close-btn" id="close-project-manager">&times;</button>
+            </div>
+            <div class="project-manager-controls">
+                <button id="new-project-from-manager" class="project-action-btn new-btn">+ New Project</button>
+                <button id="refresh-projects" class="project-action-btn refresh-btn">🔄 Refresh</button>
+            </div>
+            <div class="projects-container">
+                <div class="projects-header">
+                    <span class="col-name">Project Name</span>
+                    <span class="col-date">Last Modified</span>
+                    <span class="col-actions">Actions</span>
+                </div>
+                <div class="projects-list" id="projects-list">
+                    <!-- Project items will be populated here -->
+                </div>
+            </div>
+            <div class="project-manager-footer">
+                <div class="storage-info" id="storage-info">
+                    <!-- Storage usage info will be shown here -->
+                </div>
             </div>
         </div>
     </div>

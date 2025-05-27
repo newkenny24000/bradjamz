@@ -304,6 +304,223 @@ body {
     border-color: #555;
 }
 
+#save-project-btn {
+    background: linear-gradient(145deg, #2a5d3a, #1e4a2a);
+    border: 1px solid #4CAF50;
+}
+
+#save-project-btn:hover {
+    background: linear-gradient(145deg, #4CAF50, #2a5d3a);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+#load-project-btn {
+    background: linear-gradient(145deg, #3a5a7d, #2a4a6a);
+    border: 1px solid #2196F3;
+}
+
+#load-project-btn:hover {
+    background: linear-gradient(145deg, #2196F3, #3a5a7d);
+    box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+}
+
+/* Project Manager Modal */
+.project-manager-content {
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    background: linear-gradient(135deg, rgba(30, 30, 35, 0.98), rgba(20, 20, 25, 0.98));
+    border: 1px solid rgba(74, 158, 255, 0.3);
+}
+
+.project-manager-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 0 20px;
+}
+
+.project-action-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.new-btn {
+    background: linear-gradient(145deg, #2a5d3a, #1e4a2a);
+    color: white;
+    border: 1px solid #4CAF50;
+}
+
+.new-btn:hover {
+    background: linear-gradient(145deg, #4CAF50, #2a5d3a);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+.refresh-btn {
+    background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+    color: white;
+    border: 1px solid #666;
+}
+
+.refresh-btn:hover {
+    background: linear-gradient(145deg, #4a4a4a, #3a3a3a);
+}
+
+.projects-container {
+    background: rgba(15, 15, 20, 0.6);
+    border-radius: 8px;
+    margin: 0 20px;
+    overflow: hidden;
+}
+
+.projects-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 2fr;
+    gap: 20px;
+    padding: 15px 20px;
+    background: rgba(74, 158, 255, 0.1);
+    border-bottom: 1px solid rgba(74, 158, 255, 0.2);
+    font-weight: 600;
+    font-size: 13px;
+    color: #4a9eff;
+}
+
+.projects-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.project-item {
+    display: grid;
+    grid-template-columns: 2fr 1fr 2fr;
+    gap: 20px;
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background-color 0.2s ease;
+    align-items: center;
+}
+
+.project-item:hover {
+    background: rgba(74, 158, 255, 0.05);
+}
+
+.project-item.current-project {
+    background: rgba(76, 175, 80, 0.1);
+    border-left: 3px solid #4CAF50;
+}
+
+.project-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.project-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #ffffff;
+}
+
+.project-meta {
+    display: flex;
+    gap: 10px;
+    font-size: 12px;
+    color: #888;
+}
+
+.project-version {
+    background: rgba(74, 158, 255, 0.2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+}
+
+.project-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.project-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.load-btn {
+    background: linear-gradient(145deg, #3a5a7d, #2a4a6a);
+    color: white;
+    border: 1px solid #2196F3;
+}
+
+.load-btn:hover {
+    background: linear-gradient(145deg, #2196F3, #3a5a7d);
+    box-shadow: 0 2px 6px rgba(33, 150, 243, 0.3);
+}
+
+.rename-btn {
+    background: linear-gradient(145deg, #7d5a3a, #6a4a2a);
+    color: white;
+    border: 1px solid #FF9800;
+}
+
+.rename-btn:hover {
+    background: linear-gradient(145deg, #FF9800, #7d5a3a);
+    box-shadow: 0 2px 6px rgba(255, 152, 0, 0.3);
+}
+
+.export-btn {
+    background: linear-gradient(145deg, #5a3a7d, #4a2a6a);
+    color: white;
+    border: 1px solid #9C27B0;
+}
+
+.export-btn:hover {
+    background: linear-gradient(145deg, #9C27B0, #5a3a7d);
+    box-shadow: 0 2px 6px rgba(156, 39, 176, 0.3);
+}
+
+.delete-btn {
+    background: linear-gradient(145deg, #7d3a3a, #6a2a2a);
+    color: white;
+    border: 1px solid #F44336;
+}
+
+.delete-btn:hover {
+    background: linear-gradient(145deg, #F44336, #7d3a3a);
+    box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3);
+}
+
+.project-manager-footer {
+    padding: 15px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 20px;
+}
+
+.storage-info {
+    display: flex;
+    gap: 10px;
+    font-size: 12px;
+    color: #888;
+    justify-content: center;
+}
+
+.no-projects {
+    text-align: center;
+    padding: 40px 20px;
+    color: #888;
+    font-style: italic;
+}
+
 /* Canvas */
 #particleCanvas {
     position: fixed;
@@ -519,6 +736,12 @@ body {
     z-index: 1000;
     font-family: monospace;
     font-size: 11px;
+    transition: all 0.3s ease;
+}
+
+.debug-panel.collapsed {
+    max-height: 35px;
+    overflow: hidden;
 }
 
 .debug-header {
